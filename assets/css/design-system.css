@@ -1,0 +1,209 @@
+/* ============================================================
+   NEXORA DESIGN SYSTEM — Phase 3
+   Loaded in addition to /assets/css/site.css on new Phase 3 pages
+   only. Reuses site.css's :root tokens (colors, fonts) — does not
+   redefine them, to guarantee zero visual drift from the existing
+   brand. Adds the component vocabulary Phase 3 pages need that
+   site.css doesn't yet have: badges, tables, form inputs, alerts,
+   timeline, dashboard widgets, chart placeholders, and formal
+   spacing + motion scales.
+   ============================================================ */
+
+/* ===== SPACING SCALE (tokens, additive) ===== */
+:root{
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
+  --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px;
+  --space-9:96px; --space-10:140px;
+  --radius-sm:10px; --radius-md:16px; --radius-lg:20px; --radius-pill:100px;
+}
+
+/* ===== MOTION SCALE (luxury, restrained — no bounce, no elastic) ===== */
+:root{
+  --ease:cubic-bezier(.4,0,.2,1);
+  --motion-fast:150ms;
+  --motion-base:250ms;
+  --motion-slow:400ms;
+}
+.ds-fade-up{opacity:0;transform:translateY(16px);transition:opacity var(--motion-slow) var(--ease),transform var(--motion-slow) var(--ease);}
+.ds-fade-up.visible{opacity:1;transform:translateY(0);}
+.ds-hover-lift{transition:transform var(--motion-base) var(--ease),border-color var(--motion-base) var(--ease);}
+.ds-hover-lift:hover{transform:translateY(-3px);}
+
+/* ===== BADGES ===== */
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.05em;text-transform:uppercase;
+  padding:5px 12px;border-radius:var(--radius-pill);border:1px solid var(--line);
+  background:var(--bg-card);color:var(--text-muted);
+}
+.badge-gold{border-color:rgba(201,162,39,0.4);background:rgba(201,162,39,0.1);color:var(--gold-light);}
+.badge-live{border-color:rgba(74,222,128,0.3);background:rgba(74,222,128,0.1);color:#4ADE80;}
+.badge-beta{border-color:rgba(180,160,255,0.3);background:rgba(180,160,255,0.1);color:#C9BEFF;}
+
+/* ===== ALERTS / CALLOUTS ===== */
+.alert{
+  display:flex;gap:14px;padding:18px 20px;border-radius:var(--radius-md);
+  border:1px solid var(--line);background:var(--bg-card);font-size:14px;line-height:1.6;color:var(--text-muted);
+}
+.alert-icon{flex-shrink:0;font-size:18px;}
+.alert-info{border-color:rgba(201,162,39,0.3);}
+.alert-info .alert-icon{color:var(--gold-light);}
+
+/* ===== DATA TABLES ===== */
+.ds-table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.ds-table{width:100%;min-width:480px;border-collapse:collapse;font-size:14px;}
+.ds-table th{
+  text-align:left;padding:12px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;
+  letter-spacing:0.05em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--line);
+}
+.ds-table td{padding:14px 16px;border-bottom:1px solid var(--line);color:var(--text);}
+.ds-table tr:last-child td{border-bottom:none;}
+.ds-table tr:hover td{background:rgba(201,162,39,0.03);}
+
+/* ===== FORM INPUTS ===== */
+.ds-field{margin-bottom:var(--space-5);}
+.ds-label{display:block;font-size:13px;color:var(--text-muted);margin-bottom:8px;}
+.ds-input,.ds-select,.ds-textarea{
+  width:100%;padding:12px 16px;border-radius:var(--radius-sm);
+  background:var(--bg-soft);border:1px solid var(--line);color:var(--text);
+  font-family:'Inter',sans-serif;font-size:14px;
+  transition:border-color var(--motion-base) var(--ease);
+}
+.ds-input:focus,.ds-select:focus,.ds-textarea:focus{outline:none;border-color:var(--gold);}
+.ds-textarea{resize:vertical;min-height:100px;}
+
+/* ===== TIMELINE ===== */
+.ds-timeline{position:relative;padding-left:32px;}
+.ds-timeline::before{content:'';position:absolute;left:7px;top:6px;bottom:6px;width:1px;background:var(--line);}
+.ds-timeline-item{position:relative;padding-bottom:var(--space-6);}
+.ds-timeline-item:last-child{padding-bottom:0;}
+.ds-timeline-item::before{
+  content:'';position:absolute;left:-32px;top:4px;width:15px;height:15px;border-radius:50%;
+  background:var(--bg-card);border:2px solid var(--gold);
+}
+.ds-timeline-item h4{font-size:15px;margin-bottom:4px;}
+.ds-timeline-item p{font-size:13.5px;color:var(--text-muted);line-height:1.6;}
+
+/* ===== DASHBOARD WIDGETS (for the upcoming mockup pages) ===== */
+.ds-dashboard-frame{
+  background:linear-gradient(165deg, var(--bg-card) 0%, var(--bg-soft) 100%);
+  border:1px solid rgba(201,162,39,0.14);border-radius:var(--radius-lg);
+  padding:var(--space-6);
+  box-shadow:
+    0 50px 80px -36px rgba(0,0,0,0.5),
+    0 10px 22px -12px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.035),
+    inset 0 0 0 1px rgba(255,255,255,0.012);
+  position:relative;
+}
+.ds-dashboard-topbar{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-6);
+  padding-bottom:var(--space-4);border-bottom:1px solid var(--line);
+  flex-wrap:wrap;gap:8px;
+}
+.ds-dashboard-topbar .title{font-family:'Fraunces',serif;font-size:18px;}
+.ds-widget-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-5);}
+@media(max-width:860px){.ds-widget-grid{grid-template-columns:1fr 1fr;}}
+.ds-widget{
+  background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--radius-md);
+  padding:var(--space-5);
+  transition:border-color var(--motion-base) var(--ease), transform var(--motion-base) var(--ease), box-shadow var(--motion-base) var(--ease);
+}
+.ds-widget:hover{
+  border-color:rgba(201,162,39,0.35);transform:translateY(-2px);
+  box-shadow:0 16px 32px -18px rgba(0,0,0,0.5);
+}
+@media(prefers-reduced-motion: reduce){.ds-widget{transition:none;}.ds-widget:hover{transform:none;}}
+.ds-widget .metric{font-family:'Fraunces',serif;font-size:26px;color:var(--gold-light);}
+.ds-widget .metric-label{font-size:12px;color:var(--text-muted);margin-top:4px;}
+.ds-widget .metric-delta{font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:8px;display:inline-block;}
+.ds-widget .metric-delta.up{color:#4ADE80;}
+.ds-widget .metric-delta.down{color:#E88A7D;}
+
+/* ===== CHART PLACEHOLDERS (structural — real data comes later) ===== */
+.ds-chart-bars{display:flex;align-items:flex-end;gap:6px;height:120px;}
+.ds-chart-bars .bar{flex:1;background:linear-gradient(180deg,var(--gold-light),var(--gold));border-radius:4px 4px 0 0;opacity:0.85;}
+.ds-chart-line{position:relative;height:120px;}
+.ds-chart-line svg{width:100%;height:100%;}
+.ds-chart-line path{fill:none;stroke:var(--gold-light);stroke-width:2;}
+
+/* ===== SAMPLE-DATA LABEL (required wherever mock dashboard data appears) ===== */
+.ds-sample-label{
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--text-muted);text-align:center;margin-bottom:var(--space-4);
+}
+
+/* ===== SECTION UTILITIES ===== */
+.ds-section{padding:var(--space-9) 0;}
+@media(max-width:860px){.ds-section{padding:var(--space-7) 0;}}
+
+/* ===== ECOSYSTEM FLOW (Platform Overview, and later the Product
+   Architecture section) — tiered flow, no SVG connector lines
+   needed; arrows are typographic, consistent with the site's
+   existing "icons as typography" iconography rule. ===== */
+.ecosystem-tier-label{
+  text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.06em;
+  text-transform:uppercase;color:var(--text-muted);margin-bottom:16px;
+}
+.ecosystem-row{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:8px;}
+.ecosystem-node{
+  display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;
+  background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius-md);
+  padding:20px 18px;min-width:150px;transition:border-color var(--motion-base) var(--ease);
+}
+.ecosystem-node.is-live{border-color:rgba(201,162,39,0.45);}
+.ecosystem-node.is-live:hover{border-color:var(--gold);}
+.ecosystem-node-icon{font-size:22px;color:var(--gold-light);}
+.ecosystem-node-name{font-size:13.5px;font-weight:600;color:var(--text);}
+.ecosystem-node-desc{font-size:11.5px;color:var(--text-muted);line-height:1.5;max-width:150px;}
+.ecosystem-arrow-down{text-align:center;color:var(--text-muted);font-size:18px;margin:6px 0 18px;}
+
+/* ===== INTERACTIVE ECOSYSTEM NODE (Increment 11) ===== */
+.ecosystem-node{position:relative;overflow:visible;cursor:pointer;}
+.ecosystem-node-detail{
+  position:absolute;left:50%;bottom:calc(100% + 10px);transform:translate(-50%,4px);
+  width:220px;background:var(--bg);border:1px solid rgba(201,162,39,0.4);border-radius:var(--radius-sm);
+  padding:12px 14px;font-size:12px;line-height:1.55;color:var(--text-muted);text-align:left;
+  box-shadow:0 20px 45px -15px rgba(0,0,0,0.6);
+  opacity:0;pointer-events:none;z-index:20;
+  transition:opacity var(--motion-base) var(--ease), transform var(--motion-base) var(--ease);
+}
+.ecosystem-node:hover .ecosystem-node-detail,
+.ecosystem-node:focus-visible .ecosystem-node-detail,
+.ecosystem-node:focus .ecosystem-node-detail{
+  opacity:1;transform:translate(-50%,0);pointer-events:auto;
+}
+@media(prefers-reduced-motion: reduce){
+  .ecosystem-node-detail{transition:opacity 1ms linear;transform:translate(-50%,0);}
+}
+@media(max-width:600px){
+  /* Tooltips positioned above are cramped on narrow phones; reveal inline below instead */
+  .ecosystem-node-detail{position:static;transform:none;width:auto;margin-top:8px;box-shadow:none;display:none;}
+  .ecosystem-node:hover .ecosystem-node-detail,
+  .ecosystem-node:focus-visible .ecosystem-node-detail,
+  .ecosystem-node:focus .ecosystem-node-detail{display:block;}
+}
+
+/* ========================================================================
+   PHASE 3 ADDITIONS — Increment 10: shared dashboard patterns
+   (status/warning badge, filter bar, empty/loading/error states)
+   ======================================================================== */
+.badge-warn{border-color:rgba(232,138,125,0.35);background:rgba(232,138,125,0.1);color:#E88A7D;}
+
+.ds-filter-bar{
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px;
+}
+.ds-filter-chip{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.04em;
+  padding:7px 14px;border-radius:var(--radius-pill);border:1px solid var(--line);
+  background:var(--bg-soft);color:var(--text-muted);
+}
+.ds-filter-chip.is-active{border-color:var(--gold);color:var(--gold-light);background:rgba(201,162,39,0.08);}
+
+.ds-empty-state,.ds-loading-state,.ds-error-state{
+  text-align:center;padding:var(--space-7) var(--space-5);color:var(--text-muted);font-size:13.5px;
+}
+.ds-empty-state .icon,.ds-loading-state .icon,.ds-error-state .icon{font-size:22px;display:block;margin-bottom:10px;}
+.ds-error-state{color:#E88A7D;}
+.ds-loading-state .icon{animation:dsSpin 1.1s linear infinite;}
+@keyframes dsSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
