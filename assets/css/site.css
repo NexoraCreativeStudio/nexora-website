@@ -867,6 +867,10 @@ body.menu-open{overflow:hidden;}
 .service-feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
 @media(max-width:860px){.service-feature-grid{grid-template-columns:1fr 1fr;}}
 @media(max-width:600px){.service-feature-grid{grid-template-columns:1fr;}}
+/* Scoped fix: this specific 10-item grid renders a 3+3+3+1 orphan row at
+   3 columns. Desktop-only override to a clean 5x2 — tablet/mobile keep
+   the base class's existing 2-col/1-col breakpoints untouched. */
+@media(min-width:861px){.lux-services-grid-2col{grid-template-columns:repeat(2,1fr);}}
 .service-feature-card{
   background:var(--bg-card);border:1px solid var(--line);border-radius:16px;
   padding:26px 22px;
