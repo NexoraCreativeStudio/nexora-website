@@ -1,16 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
   <url>
     <loc>https://nexorastudio.uk/</loc>
   </url>
+
+  <url>
+    <loc>https://nexorastudio.uk/platform/</loc>
+  </url>
+
+  <url>
+    <loc>https://nexorastudio.uk/platform/ai-receptionist/</loc>
+  </url>
+
+  <url>
+    <loc>https://nexorastudio.uk/platform/ai-crm/</loc>
+  </url>
+
+  <url>
+    <loc>https://nexorastudio.uk/platform/analytics/</loc>
+  </url>
+
+  <url>
+    <loc>https://nexorastudio.uk/platform/automations/</loc>
+  </url>
+
+  <url>
+    <loc>https://nexorastudio.uk/platform/knowledge-base/</loc>
+  </url>
+
+  <url>
+    <loc>https://nexorastudio.uk/platform/lead-reactivation/</loc>
+  </url>
+
+  <url>
+    <loc>https://nexorastudio.uk/platform/patient-journey/</loc>
+  </url>
+
+  <url>
+    <loc>https://nexorastudio.uk/luxury-clinic-websites/</loc>
+  </url>
+
+  <url>
+    <loc>https://nexorastudio.uk/results/</loc>
+  </url>
+
+  <url>
+    <loc>https://nexorastudio.uk/results/aura-aesthetics/</loc>
+  </url>
+
   <url>
     <loc>https://nexorastudio.uk/privacy.html</loc>
   </url>
+
   <url>
     <loc>https://nexorastudio.uk/terms.html</loc>
   </url>
+
   <url>
     <loc>https://nexorastudio.uk/cookies.html</loc>
   </url>
+
 </urlset>
- 
