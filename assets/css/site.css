@@ -800,7 +800,7 @@ body.menu-open{overflow:hidden;}
 }
 .platform-card h3{font-size:20px;margin-bottom:10px;}
 .platform-card p{font-size:14.5px;color:var(--text-muted);line-height:1.6;margin-bottom:18px;}
-.platform-card .btn-primary{font-size:14px;padding:12px 22px;}
+.platform-card .btn-primary{font-size:14px;padding:14px 22px;}
 .platform-card.roadmap{opacity:0.92;}
 .platform-card.roadmap .platform-card-eyebrow{color:var(--text-muted);}
 @media(max-width:700px){.platform-grid{grid-template-columns:1fr;}}
