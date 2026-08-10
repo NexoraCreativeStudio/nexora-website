@@ -727,6 +727,18 @@
 .nav-vapi-btn:hover{background:rgba(201,162,39,0.1);}
 .nav-vapi-btn.vapi-active{background:var(--gold);color:#0B0B0C;}
 
+/* ===== PHASE C: LANGUAGE SWITCHER (topbar, all breakpoints) ===== */
+.lang-switcher{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:'Inter',sans-serif;font-size:11.5px;letter-spacing:0.02em;line-height:1;
+  white-space:nowrap;
+}
+.lang-switcher-item{color:var(--text-muted);}
+.lang-switcher-link{cursor:pointer;}
+.lang-switcher-link:hover,.lang-switcher-link:focus-visible{color:var(--gold-light);}
+.lang-switcher-active{color:var(--gold-light);font-weight:600;}
+.lang-switcher-sep{color:var(--line);}
+
 /* ===== ACCESSIBILITY: visible focus states ===== */
 a:focus-visible,button:focus-visible,input:focus-visible{
   outline:2px solid var(--gold-light);outline-offset:2px;

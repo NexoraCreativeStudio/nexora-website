@@ -5,9 +5,23 @@ It exists so that no build step or refactor can silently alter the live English 
 
 ## Pinned baseline
 
-- **Commit:** `73d680d` — "Fix homepage horizontal overflow" (current HEAD, branch `feature/phase-4-next`)
-- **SHA-256 of root `index.html`:** `46e2dbe8586ea30b726f3a53a94e5461e079613eae5b7f848c709698ca7b8c13`
+- **Commit:** `2291aa4` — "Add German multilingual support with build system and localization" (parent of the Phase C5 promotion)
+- **SHA-256 of root `index.html`:** `87454774d3ecf71910bd0f0dbc82da72478a386da014679d6ccdb7ec604573a1`
 - Working tree was clean when this file was written.
+
+## Previous baseline
+
+- **Previous SHA-256 of root `index.html`:** `46e2dbe8586ea30b726f3a53a94e5461e079613eae5b7f848c709698ca7b8c13`
+  (pinned at commit `2291aa4`, superseded by the Phase C5 homepage promotion below)
+
+## Promotion log (Phase C5 — English/German homepage promotion)
+
+- **Date:** 2026-08-10
+- **Action:** promoted verified generated English homepage (`dist/index.html`) to root `index.html`.
+- **Promotion adds only:**
+  - reciprocal hreflang + x-default alternate links in `<head>`
+  - the English/Deutsch language switcher in the topbar
+- The promoted root `index.html` is byte-identical to `dist/index.html` (verified immediately after copy).
 
 ## Immutable rule
 
@@ -22,10 +36,11 @@ It exists so that no build step or refactor can silently alter the live English 
 
 - [x] A0 — baseline pin + `.gitignore`
 - [x] A1 — source directory structure
-- [ ] A2 — extract English homepage into `src/content/en.json` + tokenized source
-- [ ] A3 — split into templates + partials
-- [ ] A4 — `build.js` (zero-dependency) + `verify.js`
-- [ ] A5 — generate `dist/index.html`
-- [ ] A6 — English validation matrix
-- [ ] B  — German content + validate `/de/`
-- [ ] C  — language switcher + reciprocal hreflang + sitemap + promotion decision
+- [x] A2 — extract English homepage into `src/content/en.json` + tokenized source
+- [x] A3 — split into templates + partials
+- [x] A4 — `build.js` (zero-dependency) + `verify.js`
+- [x] A5 — generate `dist/index.html`
+- [x] A6 — English validation matrix
+- [x] B  — German content + validate `/de/`
+- [x] C  — language switcher + reciprocal hreflang + sitemap + promotion decision
+- [x] C5 — English/German homepage promotion (baseline updated to promoted root)

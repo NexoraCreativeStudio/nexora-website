@@ -70,24 +70,46 @@ const flat = {};
   }
 })(dict, '');
 
+/* ---------------- language registry ---------------- */
+// Central registry for every language the build can emit. The order of
+// LANGUAGE_ORDER is the order languages appear in the switcher menu; only
+// entries present here (and in src/content/<code>.json) are active. Future
+// languages (fr, ar, fa…) extend this list — Persian must stay last.
+const LANGUAGES = {
+  en: {
+    code: 'en',
+    label: 'English',
+    lang: 'en',
+    hreflang: 'en',
+    url: '/',
+    canonical: 'https://nexorastudio.uk/',
+    og_locale: 'en_GB',
+  },
+  de: {
+    code: 'de',
+    label: 'Deutsch',
+    lang: 'de',
+    hreflang: 'de',
+    url: '/de/',
+    canonical: 'https://nexorastudio.uk/de/',
+    og_locale: 'de_DE',
+  },
+};
+
+// Menu order for the language switcher. English and German are the only
+// active languages this phase. Do not add inactive fake entries.
+const LANGUAGE_ORDER = ['en', 'de'];
+
 /* ---------------- localized document metadata (non-English only) ---------------- */
 // English builds keep the template's document metadata verbatim (lang="en",
 // root canonical), so the English output stays byte-identical to the verified
 // baseline. Non-English builds apply the language's document settings as a
 // final pass after content substitution. Only these settings are localized —
 // asset URLs, analytics IDs and all other configuration stay untouched.
-const DOC = {
-  de: {
-    lang: 'de',
-    canonical: 'https://nexorastudio.uk/de/',
-    og_locale: 'de_DE',
-  },
-};
-
 function localizeDocument(html) {
-  const doc = DOC[LANG];
+  const doc = LANGUAGES[LANG];
   if (!doc) fail('no document settings defined for language "' + LANG + '"');
-  const root = 'https://nexorastudio.uk/';
+  const root = LANGUAGES.en.canonical;
   const swaps = [
     ['<html lang="en">', '<html lang="' + doc.lang + '">'],
     ['<link rel="canonical" href="' + root + '">', '<link rel="canonical" href="' + doc.canonical + '">'],
@@ -100,6 +122,44 @@ function localizeDocument(html) {
     html = html.split(from).join(to);
   }
   return html;
+}
+
+/* ---------------- language switcher + hreflang generation ---------------- */
+// Both are injected after content substitution via [[...]] markers placed in
+// the partials. The switcher shows only ACTIVE languages (LANGUAGE_ORDER); the
+// active language is rendered as a non-link element with aria-current="page"
+// (best practice: never link a page to itself). Hreflang alternates list the
+// same active set plus x-default, which resolves to the English homepage.
+function langItem(entry, isActive) {
+  const cls = 'lang-switcher-item ' + (isActive ? 'lang-switcher-active' : 'lang-switcher-link');
+  const langAttr = 'lang="' + entry.lang + '"';
+  if (isActive) {
+    return '<span class="' + cls + '" aria-current="page" ' + langAttr + '>' + entry.label + '</span>';
+  }
+  return '<a class="' + cls + '" href="' + entry.url + '" hreflang="' + entry.hreflang + '" ' + langAttr + '>' + entry.label + '</a>';
+}
+
+function renderSwitcher(current) {
+  const label = flat['a11y.language_selector'] || 'Language';
+  const sep = '<span class="lang-switcher-sep" aria-hidden="true">/</span>';
+  const items = LANGUAGE_ORDER.map(code => {
+    const entry = LANGUAGES[code];
+    if (!entry) fail('missing language registry entry: ' + code);
+    return langItem(entry, code === current);
+  });
+  return '<div class="lang-switcher" role="group" aria-label="' + label + '">'
+    + items.join(sep)
+    + '</div>';
+}
+
+function renderHreflang() {
+  const links = LANGUAGE_ORDER.map(code => {
+    const entry = LANGUAGES[code];
+    if (!entry) fail('missing language registry entry: ' + code);
+    return '<link rel="alternate" hreflang="' + entry.hreflang + '" href="' + entry.canonical + '">';
+  });
+  links.push('<link rel="alternate" hreflang="x-default" href="' + LANGUAGES.en.canonical + '">');
+  return links.join('\n');
 }
 
 /* ---------------- assemble ---------------- */
@@ -145,6 +205,16 @@ if (leftovers) fail('unresolved token(s): ' + [...new Set(leftovers)].join(', ')
 
 // pass 3: apply language-level document metadata (lang attr, canonical, og:locale, JSON-LD url)
 if (LANG !== 'en') html = localizeDocument(html);
+
+// pass 4: inject generated build output (language switcher, hreflang alternates).
+// Markers use [[...]] so neither pass 1 ({{...}} partials) nor pass 2
+// (content tokens) touch them.
+html = html.split('[[hreflang-alternates]]').join(renderHreflang());
+html = html.split('[[lang-switcher]]').join(renderSwitcher(LANG));
+const leftoverMarkers = html.match(/\[\[[^\]\[]+\]\]/g);
+if (leftoverMarkers) {
+  fail('unresolved build marker(s): ' + [...new Set(leftoverMarkers)].join(', '));
+}
 
 /* ---------------- write ---------------- */
 fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
