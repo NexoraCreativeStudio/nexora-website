@@ -5,10 +5,17 @@
  * Reads src/templates/page.html, substitutes partial slots from src/partials and
  * src/templates, then substitutes {{token}} content tokens from
  * src/content/<lang>.json. Emits dist/index.html (English) or dist/<lang>/index.html.
+ * For German builds only, ALSO emits a deployable copy to repo-root de/index.html
+ * so the static host (publish dir = repo root) can serve /de/ from the committed
+ * tree. English builds emit no deploy copy — the English homepage is promoted to
+ * root index.html only via the explicit, reviewed promotion step, never by the build.
  *
  * Safety guarantees:
- *   - writes ONLY under dist/ (validated as a strict child of the repo root)
+ *   - writes ONLY under dist/ (validated as a strict child of the repo root),
+ *     EXCEPT the single hard-coded deploy copy de/index.html for German builds
  *   - hard-blocked from ever writing repo-root index.html
+ *   - the deploy-copy path is re-validated against exactly repo-root de/index.html
+ *     before every write (no arbitrary repo-root writes, no path traversal)
  *   - fails on any unresolved {{token}} or missing translation key
  *   - UTF-8, byte-faithful: partial content is inserted verbatim (single trailing
  *     newline stripped so surrounding layout controls line breaks).
@@ -30,6 +37,15 @@ const OUTPUT = LANG === 'en'
   ? path.join(DIST, 'index.html')
   : path.join(DIST, LANG, 'index.html');
 
+// Deployable copy — German builds additionally emit the same rendered HTML to
+// repo-root de/index.html so the static host can serve /de/ from the committed
+// tree. Hard-coded to exactly de/index.html (validated below). English builds
+// get NO deploy copy: root index.html is written only by the explicit promotion
+// step, never by the build.
+const DEPLOY_OUTPUT = LANG === 'de'
+  ? path.join(ROOT, 'de', 'index.html')
+  : null;
+
 /* ---------------- guards ---------------- */
 function fail(msg) {
   console.error('[build.js] ERROR: ' + msg);
@@ -44,6 +60,26 @@ if (OUTPUT === DIST || !OUTPUT.startsWith(DIST + path.sep)) {
 }
 if (OUTPUT === path.join(ROOT, 'index.html')) {
   fail('refusing to overwrite the live homepage at repo root');
+}
+
+// Strict guards for the deploy copy. Only repo-root de/index.html is ever
+// permitted as an additional output, and only for German builds. This blocks
+// arbitrary repo-root writes and path traversal by construction (the path is
+// computed, not user-supplied, and re-validated against the exact expected value).
+if (DEPLOY_OUTPUT) {
+  const deployExpected = path.join(ROOT, 'de', 'index.html');
+  if (DEPLOY_OUTPUT !== deployExpected) {
+    fail('deploy output path is not exactly de/index.html: ' + DEPLOY_OUTPUT);
+  }
+  if (DEPLOY_OUTPUT === path.join(ROOT, 'index.html')) {
+    fail('refusing to overwrite the live homepage at repo root');
+  }
+  if (!DEPLOY_OUTPUT.startsWith(ROOT + path.sep)) {
+    fail('deploy output escapes repo root: ' + DEPLOY_OUTPUT);
+  }
+  if (path.basename(DEPLOY_OUTPUT) !== 'index.html' || path.dirname(DEPLOY_OUTPUT) !== path.join(ROOT, 'de')) {
+    fail('deploy output must be exactly de/index.html: ' + DEPLOY_OUTPUT);
+  }
 }
 
 const read = p => fs.readFileSync(p, 'utf8');
@@ -219,7 +255,15 @@ if (leftoverMarkers) {
 /* ---------------- write ---------------- */
 fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
 fs.writeFileSync(OUTPUT, html, 'utf8');
-
 console.log('[build.js] OK  ' + LANG + ' -> ' + path.relative(ROOT, OUTPUT));
+
+// Deploy copy (German only) — same rendered HTML at repo-root de/index.html,
+// guarded above to be exactly that path and nothing else.
+if (DEPLOY_OUTPUT) {
+  fs.mkdirSync(path.dirname(DEPLOY_OUTPUT), { recursive: true });
+  fs.writeFileSync(DEPLOY_OUTPUT, html, 'utf8');
+  console.log('[build.js] OK  ' + LANG + ' deploy copy -> ' + path.relative(ROOT, DEPLOY_OUTPUT));
+}
+
 console.log('[build.js]     ' + Object.keys(flat).length + ' translation keys, output '
   + Buffer.byteLength(html, 'utf8') + ' bytes');
