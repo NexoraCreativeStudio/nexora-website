@@ -6,6 +6,23 @@
     window.dataLayer.push(arguments);
   };
 
+  /* ---- i18n: consent banner text by language ---- */
+  var consentI18n = {
+    en: {
+      text: 'We use analytics cookies to understand how visitors use our website.',
+      reject: 'Reject analytics',
+      accept: 'Accept analytics'
+    },
+    de: {
+      text: 'Wir verwenden Analyse-Cookies, um zu verstehen, wie Besucher unsere Website nutzen.',
+      reject: 'Analyse ablehnen',
+      accept: 'Analyse akzeptieren'
+    }
+  };
+
+  var lang = (document.documentElement.lang || 'en').toLowerCase();
+  var t = consentI18n[lang] || consentI18n.en;
+
   var stored = localStorage.getItem('nexora_analytics_consent');
 
   gtag('consent', 'default', {
@@ -36,10 +53,10 @@
 
       banner.innerHTML =
         '<div class="cookie-consent-inner">' +
-          '<p>We use analytics cookies to understand how visitors use our website.</p>' +
+          '<p>' + t.text + '</p>' +
           '<div class="cookie-consent-actions">' +
-            '<button type="button" data-consent="denied">Reject analytics</button>' +
-            '<button type="button" data-consent="granted">Accept analytics</button>' +
+            '<button type="button" data-consent="denied">' + t.reject + '</button>' +
+            '<button type="button" data-consent="granted">' + t.accept + '</button>' +
           '</div>' +
         '</div>';
 

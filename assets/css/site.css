@@ -57,7 +57,7 @@
     background:rgba(11,11,12,0.82);
     backdrop-filter:blur(12px);
   }
-  nav{display:flex;align-items:center;justify-content:space-between;padding:18px 36px;max-width:1160px;margin:0 auto;border-bottom:1px solid rgba(201,162,39,0.12);gap:24px;}
+  nav{display:flex;align-items:center;justify-content:space-between;padding:18px 36px;max-width:max-content;margin:0 auto;border-bottom:1px solid rgba(201,162,39,0.12);gap:24px;}
   .logo{display:flex;align-items:center;gap:10px;font-family:'Fraunces',serif;font-size:16px;letter-spacing:0.04em;white-space:nowrap;}
   .logo-mark{
     width:34px;height:34px;border-radius:8px;
