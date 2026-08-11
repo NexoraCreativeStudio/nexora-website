@@ -1,0 +1,342 @@
+/* Nexora Client Proposal — print-ready visual system (PROP.2).
+   Uses the established Nexora brand tokens (see assets/css/site.css :root):
+   dark #0B0B0C, gold #C9A227, gold-light #E8CD7A, silver #B7B3A9,
+   text #F3EFE6, muted #9C978C; type: Fraunces / Inter / IBM Plex Mono. */
+
+:root {
+  --ink: #1C1A17;
+  --ink-soft: #4A463E;
+  --muted: #6E6A60;
+  --paper: #FFFFFF;
+  --paper-soft: #F8F5EC;
+  --line: #E4E0D4;
+  --gold: #C9A227;
+  --gold-soft: #F3EAD0;
+  --dark: #0B0B0C;
+  --dark-ink: #F3EFE6;
+  --dark-muted: #9C978C;
+  --serif: 'Fraunces', Georgia, serif;
+  --sans: 'Inter', Helvetica, Arial, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--sans);
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono { font-family: var(--mono); font-size: 0.92em; }
+
+/* ---------- COVER ---------- */
+.cover {
+  background: var(--dark);
+  color: var(--dark-ink);
+  padding: 56px 48px 48px;
+  min-height: 297mm;
+  display: flex;
+  align-items: flex-end;
+}
+.cover-inner { width: 100%; max-width: 820px; }
+.wordmark {
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  color: var(--dark-ink);
+  margin-bottom: 96px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.wordmark-sub { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; color: var(--dark-muted); text-transform: uppercase; }
+.kicker {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-light, #E8CD7A);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.kicker::before { content: ''; width: 26px; height: 1px; background: var(--gold); }
+.cover-title {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(30px, 4.6vw, 44px);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  max-width: 16em;
+  margin-bottom: 14px;
+}
+.cover-client {
+  font-size: 14px;
+  color: var(--dark-muted);
+  margin-bottom: 44px;
+}
+.cover-meta {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 18px;
+  border-top: 1px solid rgba(232, 205, 122, 0.28);
+  padding-top: 20px;
+  max-width: 720px;
+}
+.cover-meta dt {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dark-muted);
+  margin-bottom: 5px;
+}
+.cover-meta dd {
+  font-size: 12.5px;
+  color: var(--dark-ink);
+  font-family: var(--mono);
+  word-break: break-word;
+}
+
+/* ---------- DOCUMENT BODY ---------- */
+.doc { max-width: 820px; margin: 0 auto; padding: 44px 48px 24px; }
+
+.section { margin-bottom: 40px; }
+
+.sec-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sec-label::before { content: ''; width: 20px; height: 1px; background: var(--gold); }
+
+h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 25px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+
+h3 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 16.5px;
+  color: var(--ink-soft);
+  margin: 20px 0 10px;
+}
+
+.lede { font-size: 15px; color: var(--ink-soft); }
+.meta-line { font-size: 12.5px; color: var(--muted); font-family: var(--mono); margin-top: 12px; }
+
+.list { list-style: none; padding-left: 0; margin: 0; }
+.list li {
+  position: relative;
+  padding-left: 18px;
+  margin-bottom: 7px;
+  color: var(--ink-soft);
+}
+.list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.72em;
+  width: 7px;
+  height: 1px;
+  background: var(--gold);
+}
+
+.timeline { font-size: 15px; color: var(--ink); font-weight: 500; }
+.note { font-size: 12.5px; color: var(--muted); margin-top: 12px; }
+
+/* ---------- RECOMMENDED SOLUTION ---------- */
+.solution-card {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--gold);
+  background: var(--paper-soft);
+  border-radius: 3px;
+  padding: 18px 22px;
+}
+.sol-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.sol-row:last-child { border-bottom: 0; }
+.sol-key { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.sol-val { font-size: 15px; color: var(--ink); text-align: right; }
+
+/* ---------- COMMERCIAL SCHEDULE ---------- */
+.price-card {
+  background: var(--gold-soft);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  padding: 20px 24px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.price-kicker {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8a6d1a;
+}
+.price-amount {
+  font-family: var(--serif);
+  font-size: 34px;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.price-note { font-size: 12px; color: var(--muted); }
+
+.reference-note { font-size: 12.5px; color: var(--muted); margin: 6px 0 16px; }
+
+.fee-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+table.sched { width: 100%; border-collapse: collapse; margin-top: 6px; }
+table.sched th {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  padding: 8px 10px 8px 0;
+  border-bottom: 1px solid var(--ink);
+}
+table.sched td {
+  padding: 10px 10px 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+table.sched td.idx { font-family: var(--mono); color: var(--gold); width: 34px; }
+td.num, th.num { text-align: right; }
+
+.recurring, .care, .warranty {
+  border: 1px solid var(--line);
+  background: var(--paper-soft);
+  border-radius: 3px;
+  padding: 14px 18px;
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+}
+.rec-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.rec-amount { font-size: 14px; color: var(--ink); }
+.rec-note { font-size: 12px; color: var(--muted); width: 100%; }
+
+.tax-note { font-size: 11px; color: var(--muted); margin-top: 18px; }
+
+/* ---------- ACCEPTANCE ---------- */
+.sign-block { margin-top: 26px; max-width: 460px; }
+.sign-line {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  margin-bottom: 30px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.sign-space { flex: 1; border-bottom: 1px solid var(--ink); }
+
+/* ---------- DOCUMENT CONTROL ---------- */
+table.doc-table { width: 100%; border-collapse: collapse; }
+table.doc-table th, table.doc-table td {
+  text-align: left;
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+table.doc-table th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  width: 160px;
+}
+table.doc-table td { font-family: var(--mono); color: var(--ink); }
+
+/* ---------- FOOTER ---------- */
+.doc-footer {
+  margin-top: 32px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+/* ---------- PRINT ---------- */
+@page { size: A4; margin: 0; }
+@media print {
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-size: 12.5px; }
+  .cover { min-height: 297mm; page-break-after: always; padding: 40px 34px; }
+  .doc { padding: 0 34px; }
+  .section { margin-bottom: 30px; page-break-inside: auto; }
+  .break { page-break-before: always; }
+  h2, h3 { page-break-after: avoid; }
+  .price-card, .recurring, .care, .warranty, .solution-card { page-break-inside: avoid; }
+  table.sched tr, table.doc-table tr { page-break-inside: avoid; }
+  .list li { page-break-inside: avoid; }
+  .doc-footer { page-break-inside: avoid; }
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 640px) {
+  body { font-size: 13.5px; }
+  .cover { padding: 32px 24px; }
+  .cover-inner { max-width: 100%; }
+  .cover-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .doc { padding: 28px 22px 16px; }
+  .price-amount { font-size: 27px; }
+  .sol-row { flex-direction: column; gap: 2px; }
+  .sol-val { text-align: left; }
+  table.doc-table th { width: 110px; }
+}

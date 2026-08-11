@@ -94,11 +94,45 @@ mistake fails validation).
   90-day Web Launch Warranty), **VAT UNDETERMINED only**, and the **obsolete £250 deposit /
   Starter-Elite** sweep. Real private instances are never validated here.
 
-## What PROP.1 does NOT implement
+## Template layer (PROP.2)
+
+The reusable client-facing template binds validated PROP.1 data to a print-ready document:
+
+| File | Role |
+|---|---|
+| `template/proposal-template.html` | Reusable Proposal HTML template (11 sections) with data-binding tokens |
+| `template/proposal.css` | Print-ready visual system (A4 `@page`, page-break rules, responsive, Nexora brand tokens) |
+| `preview-proposal.mjs` | **Safe preview mechanism** — renders a validated fixture for visual QA. NOT the full generator. |
+| `validate-proposal-template.mjs` | Template-layer validation (no hard-coded prices, no legacy/£250/VAT claims, no real client data, hooks present, render smoke test) |
+
+**Data binding.** Every template token maps to the PROP.1 schema via a presentation view model
+(`preview-proposal.mjs` → `buildViewModel`). Token syntax:
+
+- `{{path}}` — value (HTML-escaped)
+- `{{#if path}} … {{/if}}` / `{{#unless path}}` — conditionals (empty arrays are falsy)
+- `{{#each path}} … {{/each}}` — arrays; `{{.}}` = item, `{{@index}}` = 1-based number
+
+Only **presentation-derived** values are computed (money formatting, milestone amounts from the
+approved final price, recurring/Care display text, Go-Live start phrasing). No price is
+hard-coded anywhere in the template. The template contains **no** legal contract clauses;
+client-facing legal references stay neutral ("subject to the applicable Nexora Agreement").
+
+**Preview:** `node ops/proposals/preview-proposal.mjs [fixture.json]` writes
+`ops/proposals/out/proposal-preview.html` (git-ignored, never committed).
+
+**Conditional display:** reference price, setup fee, milestone table, recurring fees, Care, and
+warranty sections render only when the validated data requires them. AI offerings never show an
+invented reference price; Complete never shows a mechanical public price; recurring billing is
+presented as starting **at Go-Live**; Care is presented as monthly-in-advance and separate.
+
+**Template validation:** `node ops/proposals/validate-proposal-template.mjs`
+
+## What this Proposal System does NOT yet implement
 
 This is **not yet**:
 
-- a PDF generator
+- a full proposal generator (PROP.3 — `preview-proposal.mjs` is the safe preview mechanism only)
+- a PDF generator (the template is print-ready; browser/print PDF output is a later step)
 - an Agreement / contract generator
 - an e-signature system
 - an invoicing engine
