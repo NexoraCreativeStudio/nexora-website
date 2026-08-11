@@ -28,7 +28,7 @@ const CSS_PATH = path.join(proposalsDir, 'template', 'proposal.css');
 
 /* ---- money / label formatting ---- */
 
-const fmtMoney = (v) => {
+export const fmtMoney = (v) => {
   if (typeof v === 'number' && Number.isFinite(v)) return '£' + v.toLocaleString('en-GB');
   if (v && typeof v === 'object' && typeof v.from === 'number') return 'From £' + v.from.toLocaleString('en-GB');
   return null;
