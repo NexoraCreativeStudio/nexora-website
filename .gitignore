@@ -20,3 +20,9 @@ ops/proposals/out/
 # under ops/agreements/examples/ are synthetic only and must carry "_example": true.
 ops/agreements/private/
 ops/agreements/out/
+
+# Document Output System (PROP.6) — final generated client documents (HTML/PDF/manifest/
+# checksums) and real document private areas are private. Never commit real client data.
+# Committed fixtures under ops/proposals/examples/ and ops/agreements/examples/ are synthetic.
+ops/documents/private/
+ops/documents/out/
