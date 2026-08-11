@@ -1,0 +1,89 @@
+{
+  "_example": true,
+  "_comment": "SYNTHETIC EXAMPLE ONLY. Not a real proposal, no real client. Exercises the Nexora Complete path: NO mechanical public reference price (bespoke/scoped), the governed 30/30/30/10 milestone schedule, and AI recurring billing starting at Go-Live (where AI is included). The Approved Final Project Price is a scoped figure, never a mechanical A+B+C sum. Care remains optional and is not attached here.",
+  "proposal_id": "PRP-2026-9003",
+  "version": "1.0",
+  "status": "SENT",
+  "issue_date": "2026-08-11",
+  "valid_until": "2026-09-10",
+  "client": {
+    "name": "Example Aesthetics Ltd",
+    "company": "Example Aesthetics Ltd",
+    "contact": {
+      "name": "Alex Sample",
+      "email": "example.aesthetics@example.com",
+      "phone": "01234 000 000"
+    }
+  },
+  "project": {
+    "title": "Example Aesthetics — Complete brand, web & AI engagement",
+    "summary": "A scoped Complete engagement integrating a refreshed brand, a rebuilt clinic website, and AI Growth automation into one governed programme of work.",
+    "objectives": [
+      "Cohesive brand and web presence",
+      "AI Growth automation for patient enquiry handling",
+      "One governed engagement across brand, web and AI"
+    ]
+  },
+  "offering": {
+    "code": "COMPLETE",
+    "category": "ADDITIONAL",
+    "name": "Nexora Complete"
+  },
+  "scope": {
+    "included": [
+      "Brand refresh scope (integrated)",
+      "Website rebuild scope (integrated)",
+      "AI Growth implementation (integrated)"
+    ],
+    "deliverables": [
+      "Integrated brand, web and AI go-live",
+      "Configuration and handover documentation"
+    ],
+    "exclusions": [
+      "Scope added after agreement",
+      "Third-party platform fees",
+      "Ongoing changes after go-live (Web Care is separate and optional)"
+    ]
+  },
+  "timeline": {
+    "estimated_delivery": "12 weeks from approval",
+    "notes": "Integrated programme; final schedule confirmed at agreement"
+  },
+  "commercial_schedule": {
+    "currency": "GBP",
+    "reference_price": null,
+    "approved_final_project_price": 24000,
+    "setup_fee": null,
+    "payment_schedule": [30, 30, 30, 10],
+    "recurring_fees": {
+      "monthly_fee": 697,
+      "starts_at": "GO_LIVE"
+    },
+    "care": null,
+    "warranty": null,
+    "vat": {
+      "status": "UNDETERMINED",
+      "note": "VAT status is unresolved; no tax determination is made in this proposal."
+    }
+  },
+  "client_responsibilities": [
+    "Timely feedback at each integrated review stage",
+    "Required copy, imagery and access before each phase"
+  ],
+  "assumptions": [
+    "Complete is a scoped engagement priced by the Approved Final Project Price — not a mechanical A+B+C sum and not automatically discounted",
+    "The 30/30/30/10 payment schedule totals 100%; the first 30% is part of the total, not an additional deposit",
+    "AI monthly billing begins at Go-Live, never before"
+  ],
+  "next_steps": [
+    "Review and confirm this proposal",
+    "Following acceptance, a commercial agreement is executed before invoicing"
+  ],
+  "acceptance": {
+    "method": "written",
+    "provider": null,
+    "status": "PENDING",
+    "accepted_by": null,
+    "accepted_at": null
+  }
+}

@@ -78,7 +78,9 @@ mistake fails validation).
    `valid_until` (issue + 30 days), client/project/offering fields.
 3. Set `commercial_schedule` — reference data resolves from the billing JSON; only
    client-specific values (scope, timeline, **approved_final_project_price**) are entered.
-4. Run validation: `node ops/proposals/validate-proposals.mjs`.
+4. Validate, then generate the client-facing HTML:
+   `node ops/proposals/validate-proposals.mjs` and
+   `node ops/proposals/generate-proposal.mjs ops/proposals/private/<file>.json`.
 
 ## How validation works
 
@@ -127,15 +129,89 @@ presented as starting **at Go-Live**; Care is presented as monthly-in-advance an
 
 **Template validation:** `node ops/proposals/validate-proposal-template.mjs`
 
+## Generator (PROP.3)
+
+The full Proposal Generator turns a validated Proposal JSON instance into a
+client-facing HTML Proposal document through the PROP.2 template. It is a
+**pure renderer**: generation never changes proposal state and never touches
+the Source of Truth.
+
+**Flow:** validated proposal JSON → fail-closed PROP.1 validation (shared core)
+→ commercial resolution against `ops/billing-source-of-truth.json` → deterministic
+milestone amounts from the Approved Final Project Price → PROP.2 template → self-contained
+HTML → `ops/proposals/out/`.
+
+**CLI:**
+
+```
+node ops/proposals/generate-proposal.mjs <proposal.json> [--output <path>] [--overwrite] [--check]
+node ops/proposals/generate-proposal.mjs --example
+```
+
+- `--output <path>` — write to a chosen path (default `ops/proposals/out/{proposal_id}-v{version}.html`, sanitised).
+- `--overwrite` — allow replacing an existing output for the same `proposal_id` + `version`. Without it the generator **refuses** to silently overwrite (accepted-proposal immutability enforcement is PROP.4; generation never destroys history accidentally).
+- `--check` — validate only, no render (exit 0 = generation-safe).
+- `--example` — render the synthetic B2 example.
+
+**Input safety.** Real Proposal instances live in `ops/proposals/private/` (gitignored)
+and may be generated from there (no `_example` marker required). Committed fixtures
+under `ops/proposals/examples/` must carry `"_example": true`. Any other input path
+is **refused** — the generator will not render arbitrary tracked data.
+
+**Validation before generation (fail closed).** The generator runs the same shared
+PROP.1 validation core as the CLI validator (structure, offering identity,
+commercial references vs the billing JSON, payment schedule, setup fee, recurring
+semantics, Care, Warranty, validity, VAT UNDETERMINED, no legacy/£250 language).
+An invalid Proposal is never rendered.
+
+**Commercial resolution.** All authoritative figures resolve from
+`ops/billing-source-of-truth.json` at validation time. The generator contains no
+prices and cannot mutate the Source of Truth.
+
+**Approved Final Project Price.** Milestone amounts are computed from the
+Approved Final Project Price, never the public/reference "From" price. Non-final
+tranches are rounded to whole pounds (half up); the final tranche absorbs any
+rounding residual so the displayed total equals the Approved Final Project Price
+exactly. Labels stay neutral ("Tranche 1..n") — no invented due dates.
+
+**Bespoke.** Complete never shows a mechanical public price and uses the governed
+30/30/30/10 schedule. B3 uses a recorded per-proposal schedule (sums to 100%).
+C3/A3 approved final prices may legitimately differ from their From reference.
+
+**AI recurring.** A1/A2/A3 (and Complete with AI) always present the one-time
+implementation fee separately from the monthly fee, and recurring billing is
+worded as starting **at Go-Live** — never at acceptance, signature, invoice or project start.
+
+**Care & warranty.** Care is monthly, paid in advance, and rendered separately
+from the project amount. The only warranty rendered is the governed 90-day Web
+Launch Warranty.
+
+**VAT.** Client-facing output makes no VAT determination — the neutral tax note
+from PROP.2 is used.
+
+**Agreement boundary.** The generated document is a Proposal, not a contract:
+"Subject to the applicable Nexora Agreement." No legal clauses (liability,
+termination, IP, governing law, indemnity, refund, privacy/DPA, cancellation) are
+generated.
+
+**Output & PDF path.** Output is a fully self-contained HTML file
+(`ops/proposals/out/`, gitignored) suitable for browser review, email/link handoff,
+and print-to-PDF. PDF is produced by the browser: **HTML → Print → Save as PDF**.
+No external PDF engine or SaaS is required.
+
+**Generator validation:** `node ops/proposals/validate-proposal-generator.mjs`
+(static safety, fixture renders, no leftover tokens, rounding determinism,
+overwrite protection, and 12 negative tests proving generation fails closed).
+
 ## What this Proposal System does NOT yet implement
 
 This is **not yet**:
 
-- a full proposal generator (PROP.3 — `preview-proposal.mjs` is the safe preview mechanism only)
-- a PDF generator (the template is print-ready; browser/print PDF output is a later step)
 - an Agreement / contract generator
 - an e-signature system
 - an invoicing engine
+- automated PDF rendering (output is print-ready; PDF is produced by the browser
+  via Print → Save as PDF)
 
 Those remain separate (later PROP units / external gates). Acceptance/signature is represented
 only as a provider-neutral placeholder (`acceptance` block) — **E-SIGNATURE PROVIDER — OWNER
