@@ -13,3 +13,10 @@ dist/
 # ops/proposals/examples/ are synthetic only and must carry "_example": true.
 ops/proposals/private/
 ops/proposals/out/
+
+# Agreement System (PROP.5) — real Agreements and generated Agreement documents are private.
+# Never commit real client data (names, emails, phones, addresses, negotiated prices,
+# accepted/signed Agreements, handoffs, execution/signature material). Committed fixtures
+# under ops/agreements/examples/ are synthetic only and must carry "_example": true.
+ops/agreements/private/
+ops/agreements/out/

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{client_company}} — {{project_title}} · Nexora Agreement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="agreement.css">
+</head>
+<body>
+
+<!-- 0 · STATUS BANNER -->
+{{#if status_banner}}
+<div class="status-banner {{status_banner_class}}">{{status_banner}}</div>
+{{/if}}
+
+<!-- 1 · COVER -->
+<header class="cover">
+  <div class="cover-inner">
+    <p class="wordmark">NEXORA<span class="wordmark-sub">Creative Studio</span></p>
+    <p class="kicker">Client Agreement</p>
+    <h1 class="cover-title">{{project_title}}</h1>
+    <p class="cover-client">Between Nexora Creative Studio and {{client_company}}</p>
+    <dl class="cover-meta">
+      <div><dt>Agreement</dt><dd>{{agreement_id}}</dd></div>
+      <div><dt>Version</dt><dd>{{version}}</dd></div>
+      <div><dt>Status</dt><dd>{{status_label}}</dd></div>
+      <div><dt>Created</dt><dd>{{created_at}}</dd></div>
+      <div><dt>Proposal</dt><dd>{{proposal_id}} v{{proposal_version}}</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main class="doc">
+
+  <!-- 2 · DOCUMENT CONTROL -->
+  <section class="section">
+    <p class="sec-label">01 · Document control</p>
+    <h2>Document control</h2>
+    <table class="doc-table">
+      <tbody>
+        <tr><th>Agreement ID</th><td>{{agreement_id}}</td></tr>
+        <tr><th>Version</th><td>{{version}}</td></tr>
+        <tr><th>Status</th><td>{{status_label}}</td></tr>
+        <tr><th>Created</th><td>{{created_at}}</td></tr>
+        <tr><th>Source proposal</th><td>{{proposal_id}} v{{proposal_version}}</td></tr>
+        <tr><th>Proposal fingerprint</th><td class="fp">{{proposal_fingerprint_short}}</td></tr>
+      </tbody>
+    </table>
+    {{#if draft}}
+    <p class="note draft-note">This is a <strong>DRAFT</strong> Agreement produced from an accepted Proposal. It is <strong>NOT FOR EXECUTION</strong>. No provision in this document is agreed until the applicable Nexora Agreement is executed through the governed execution process.</p>
+    {{/if}}
+  </section>
+
+  <!-- 3 · PARTIES -->
+  <section class="section">
+    <p class="sec-label">02 · Parties</p>
+    <h2>Parties</h2>
+    <div class="parties">
+      <div class="party">
+        <span class="party-role">Nexora Creative Studio</span>
+        <span class="party-val">The service provider</span>
+      </div>
+      <div class="party">
+        <span class="party-role">{{client_company}}</span>
+        <span class="party-val">{{client_name}}{{#if client_contact_name}} · {{client_contact_name}}{{/if}}{{#if client_email}} · {{client_email}}{{/if}}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · PROJECT / SERVICES -->
+  <section class="section">
+    <p class="sec-label">03 · Project &amp; services</p>
+    <h2>Project &amp; services</h2>
+    <p class="lede">{{project_summary}}</p>
+    <div class="solution-card">
+      <div class="sol-row"><span class="sol-key">Package</span><span class="sol-val">{{offering_name}}</span></div>
+      <div class="sol-row"><span class="sol-key">Code</span><span class="sol-val mono">{{offering_code}} · {{offering_category}}</span></div>
+      <div class="sol-row"><span class="sol-key">Engagement</span><span class="sol-val">{{project_title}}</span></div>
+    </div>
+    {{#if project_objectives}}
+    <h3>Objectives</h3>
+    <ul class="list">{{#each project_objectives}}<li>{{.}}</li>{{/each}}</ul>
+    {{/if}}
+  </section>
+
+  <!-- 5 · SCOPE -->
+  <section class="section">
+    <p class="sec-label">04 · Scope &amp; deliverables</p>
+    <h2>Scope &amp; deliverables</h2>
+    {{#if scope_included}}
+    <h3>Included</h3>
+    <ul class="list">{{#each scope_included}}<li>{{.}}</li>{{/each}}</ul>
+    {{/if}}
+    {{#if scope_deliverables}}
+    <h3>Deliverables</h3>
+    <ul class="list">{{#each scope_deliverables}}<li>{{.}}</li>{{/each}}</ul>
+    {{/if}}
+    {{#if scope_exclusions}}
+    <h3>Exclusions</h3>
+    <ul class="list">{{#each scope_exclusions}}<li>{{.}}</li>{{/each}}</ul>
+    {{/if}}
+  </section>
+
+  <!-- 6 · TIMELINE -->
+  <section class="section">
+    <p class="sec-label">05 · Timeline</p>
+    <h2>Timeline</h2>
+    {{#if timeline_estimated_delivery}}<p class="timeline">{{timeline_estimated_delivery}}</p>{{/if}}
+    {{#if timeline_notes}}<p class="note">{{timeline_notes}}</p>{{/if}}
+  </section>
+
+  <!-- 7 · COMMERCIAL SCHEDULE -->
+  <section class="section commercial break">
+    <p class="sec-label">06 · Commercial schedule</p>
+    <h2>Commercial schedule</h2>
+
+    <div class="price-card">
+      <span class="price-kicker">Approved Final Project Price</span>
+      <span class="price-amount">{{approved_price_display}}</span>
+      <span class="price-note">The contractual commercial amount, inherited from the accepted Proposal · Currency {{currency}}</span>
+    </div>
+
+    {{#if reference_price_display}}
+    <p class="reference-note">Reference / public starting price: <span class="mono">{{reference_price_display}}</span>. This is an informational reference only and is <strong>not</strong> the contractual amount. The contractual commercial amount is the Approved Final Project Price above.</p>
+    {{/if}}
+
+    {{#if setup_fee_display}}
+    <div class="fee-row"><span>Setup / implementation fee</span><span class="mono">{{setup_fee_display}}</span></div>
+    {{/if}}
+
+    {{#if payment_schedule_rows}}
+    <h3>Payment / milestone schedule</h3>
+    <div class="table-scroll">
+      <table class="sched">
+        <thead><tr><th></th><th>Milestone</th><th>Share</th><th class="num">Amount</th></tr></thead>
+        <tbody>
+        {{#each payment_schedule_rows}}
+        <tr><td class="idx">{{@index}}</td><td>Tranche {{@index}}</td><td class="mono num">{{pct}}%</td><td class="mono num">{{amount_display}}</td></tr>
+        {{/each}}
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Tranche amounts are calculated from the Approved Final Project Price and total exactly to it. No payment dates or deposit terminology are stated here.</p>
+    {{/if}}
+
+    {{#if recurring_monthly_display}}
+    <div class="recurring">
+      <span class="rec-label">Monthly service</span>
+      <span class="mono rec-amount">{{recurring_monthly_display}}</span>
+      <span class="rec-note">{{recurring_start_display}} · {{recurring_note}}</span>
+    </div>
+    {{/if}}
+
+    {{#if care_plan_display}}
+    <div class="care">
+      <span class="rec-label">Care plan</span>
+      <span class="mono rec-amount">{{care_monthly_display}} / month</span>
+      <span class="rec-note">{{care_plan_display}} · {{care_note}}</span>
+    </div>
+    {{/if}}
+
+    {{#if warranty_label}}
+    <div class="warranty">
+      <span class="rec-label">Warranty</span>
+      <span class="rec-note">{{warranty_label}}</span>
+    </div>
+    {{/if}}
+
+    <p class="tax-note">Amounts are stated in {{currency}}. Any applicable tax is not determined in this document (VAT status UNDETERMINED). The tax treatment will be addressed at the applicable external accounting gate, never asserted here.</p>
+  </section>
+
+  <!-- 8 · CLIENT RESPONSIBILITIES -->
+  <section class="section">
+    <p class="sec-label">07 · Client responsibilities</p>
+    <h2>Client responsibilities</h2>
+    <ul class="list">{{#each responsibilities}}<li>{{.}}</li>{{/each}}</ul>
+  </section>
+
+  <!-- 9 · ASSUMPTIONS / DEPENDENCIES -->
+  <section class="section">
+    <p class="sec-label">08 · Assumptions &amp; dependencies</p>
+    <h2>Assumptions &amp; dependencies</h2>
+    <ul class="list">{{#each assumptions}}<li>{{.}}</li>{{/each}}</ul>
+    {{#if dependencies}}
+    <h3>Dependencies</h3>
+    <ul class="list">{{#each dependencies}}<li>{{.}}</li>{{/each}}</ul>
+    {{/if}}
+  </section>
+
+  <!-- 10 · GOVERNED COMMERCIAL TERMS -->
+  <section class="section">
+    <p class="sec-label">09 · Governed commercial terms</p>
+    <h2>Existing governed commercial terms</h2>
+    <p class="lede">The commercial content above is inherited from the accepted Proposal and is governed by the Nexora commercial constitution and billing source of truth. The following are recorded as the applicable governed commercial facts:</p>
+    <ul class="list">
+      <li>Milestone amounts derive from the Approved Final Project Price — never the public reference price.</li>
+      {{#if ai_recurring}}<li>AI recurring billing starts at Go-Live — never before.</li>{{/if}}
+      {{#if care_plan_display}}<li>Care is billed monthly in advance and is separately identifiable from the project price (never bundled).</li>{{/if}}
+      {{#if warranty_label}}<li>The only warranty claim is the governed {{warranty_label}}.</li>{{/if}}
+      <li>Proposal validity (30 days) and invoice due terms (7 calendar days) are separate governed concepts.</li>
+    </ul>
+    <p class="note">These are commercial facts inherited from the accepted Proposal, not invented contract law. Their enforcement as contract terms remains subject to the applicable executed Nexora Agreement.</p>
+  </section>
+
+  <!-- 11 · LEGAL PROVISIONS -->
+  <section class="section legal">
+    <p class="sec-label">10 · Legal provisions</p>
+    <h2>Legal provisions</h2>
+    <p class="lede">The following provisions are classified in the Nexora legal-decision register. Provisions marked “To be confirmed” are <strong>not</strong> agreed terms in this document — they are reserved and will be confirmed under the applicable Nexora Agreement. No position is asserted for them here.</p>
+    {{#each legal_sections}}
+    <div class="legal-item {{#if unresolved}}unresolved{{else}}resolved{{/if}}">
+      <span class="legal-label">{{label}}</span>
+      {{#if unresolved}}
+      <span class="legal-status">To be confirmed</span>
+      {{else}}
+      <span class="legal-status resolved">Covered by an approved Nexora term</span>
+      {{/if}}
+    </div>
+    {{/each}}
+    <p class="note">DRAFT Agreements clearly identify unresolved provisions. A READY_FOR_EXECUTION Agreement is produced only when every mandatory legal/commercial decision is resolved through an approved source.</p>
+  </section>
+
+  <!-- 12 · EXECUTION -->
+  <section class="section">
+    <p class="sec-label">11 · Execution</p>
+    <h2>Execution</h2>
+    <p class="lede">{{execution_intro}}</p>
+    <div class="sign-block">
+      <div class="sign-line"><span>For Nexora Creative Studio — authorised signatory</span><span class="sign-space"></span></div>
+      <div class="sign-line"><span>For {{client_company}} — authorised signatory</span><span class="sign-space"></span></div>
+      <div class="sign-line"><span>Name</span><span class="sign-space"></span></div>
+      <div class="sign-line"><span>Date</span><span class="sign-space"></span></div>
+    </div>
+    <p class="note">Execution / signature is a separate external gate. This section is a placeholder — nothing in this document constitutes a signature or evidence of execution.</p>
+  </section>
+
+  <!-- 13 · DOCUMENT CONTROL (tombstone) -->
+  <section class="section doc-control">
+    <p class="sec-label">12 · Provenance</p>
+    <h2>Provenance</h2>
+    <table class="doc-table">
+      <tbody>
+        <tr><th>Agreement ID</th><td>{{agreement_id}}</td></tr>
+        <tr><th>Version</th><td>{{version}}</td></tr>
+        <tr><th>Status</th><td>{{status_label}}</td></tr>
+        <tr><th>Source proposal</th><td>{{proposal_id}} v{{proposal_version}}</td></tr>
+        <tr><th>Proposal fingerprint</th><td class="fp">{{proposal_fingerprint}}</td></tr>
+        <tr><th>Acceptance record</th><td>{{acceptance_record}}</td></tr>
+        <tr><th>Agreement handoff</th><td>{{agreement_handoff}}</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="doc-footer">
+    <span>Nexora Creative Studio</span>
+    <span>{{agreement_id}} · v{{version}}</span>
+    <span>Agreement generation ≠ Agreement execution. This document is not a contract.</span>
+  </footer>
+
+</main>
+</body>
+</html>

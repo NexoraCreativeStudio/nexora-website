@@ -1,0 +1,288 @@
+{
+  "schema": "nexora-agreement/v1",
+  "agreement_id": "AGR-2026-9202",
+  "version": "1.0",
+  "status": "DRAFT",
+  "created_at": "2026-08-11",
+  "proposal": {
+    "proposal_id": "PRP-2026-9202",
+    "version": "1.0"
+  },
+  "provenance": {
+    "proposal_fingerprint": "e5144690e04f4a94a053300c1e1b70e9909f79a8518ebe8a3235f5ce0411942a",
+    "acceptance_record": "nexora-proposal-acceptance/v1",
+    "agreement_handoff": "nexora-agreement-handoff/v1",
+    "handoff_fingerprint": "9ee144d58f59e72068615d4f1aeacbf4a7729767491f6349d2a895a57b62d954"
+  },
+  "client": {
+    "name": "Example Aesthetics Ltd",
+    "company": "Example Aesthetics Ltd",
+    "contact": {
+      "name": "Alex Sample",
+      "email": "example.aesthetics@example.com",
+      "phone": "01234 000 000"
+    }
+  },
+  "project": {
+    "title": "Example Aesthetics — AI Growth rollout",
+    "summary": "Implementation of the AI Growth service for patient enquiry handling and clinic workflow automation.",
+    "objectives": [
+      "Automate patient enquiry responses",
+      "Route and qualify new leads",
+      "Reduce admin workload on the clinic team"
+    ]
+  },
+  "offering": {
+    "code": "A2",
+    "category": "AI",
+    "name": "AI Growth"
+  },
+  "scope": {
+    "included": [
+      "AI Growth implementation",
+      "Workflow configuration",
+      "Clinic team onboarding"
+    ],
+    "deliverables": [
+      "Live AI service (Go-Live)",
+      "Configuration documentation"
+    ],
+    "exclusions": [
+      "Changes requested after Go-Live",
+      "Third-party platform fees"
+    ]
+  },
+  "timeline": {
+    "estimated_delivery": "4 weeks from approval",
+    "notes": "Go-Live is recorded; recurring billing starts from Go-Live."
+  },
+  "commercial_schedule": {
+    "currency": "GBP",
+    "approved_final_project_price": 1100,
+    "setup_fee": 997,
+    "payment_schedule": null,
+    "recurring_fees": {
+      "monthly_fee": 697,
+      "starts_at": "GO_LIVE"
+    },
+    "care": {
+      "code": "WEB_CARE_PLUS",
+      "plan": "Web Care Plus",
+      "monthly_fee": 329,
+      "billed_in_advance": true
+    },
+    "warranty": null,
+    "vat": {
+      "status": "UNDETERMINED",
+      "note": "VAT status is unresolved; no tax determination is made in this proposal."
+    }
+  },
+  "client_responsibilities": [
+    "Provide access to enquiry channels for configuration",
+    "Timely review of workflow design before Go-Live"
+  ],
+  "assumptions": [
+    "Approved Final Project Price is the contractual commercial basis for the implementation",
+    "AI monthly billing begins at Go-Live, never before",
+    "Care is billed monthly in advance and is separate from the project price"
+  ],
+  "dependencies": [],
+  "legal_sections": [
+    {
+      "id": "governing_law",
+      "label": "Governing law",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No governing law has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "jurisdiction",
+      "label": "Jurisdiction",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No jurisdiction has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "dispute_resolution",
+      "label": "Dispute resolution",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No dispute-resolution mechanism has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "limitation_of_liability",
+      "label": "Limitation of liability",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No liability cap or exclusion has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "indemnities",
+      "label": "Indemnities",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No indemnity has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "ip_ownership",
+      "label": "Intellectual property",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No IP ownership / assignment / licensing position has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "confidentiality",
+      "label": "Confidentiality",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No confidentiality obligation has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "termination",
+      "label": "Termination",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No termination right has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "cancellation",
+      "label": "Cancellation",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No cancellation right has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "refunds",
+      "label": "Refunds",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No refund position has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "late_payment_penalties",
+      "label": "Late payment",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No late-payment interest or penalty has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "debt_recovery",
+      "label": "Debt recovery",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No debt-recovery position has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "force_majeure",
+      "label": "Force majeure",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No force majeure provision has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "data_processing",
+      "label": "Data processing",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No data-processing / controller / processor terms have been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "gdpr_obligations",
+      "label": "Data protection (GDPR)",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No GDPR-specific contractual commitments have been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "warranty_terms",
+      "label": "Warranty terms",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "The governed 90-day Web Launch Warranty claim may be shown as commercial data from the accepted Proposal. Any broader warranty legal terms beyond that governed claim require approval. Must not be expanded into invented warranty language."
+    },
+    {
+      "id": "statutory_representations",
+      "label": "Statutory representations",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No statutory representation has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "vat_tax_treatment",
+      "label": "Tax / VAT treatment",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "VAT status is UNDETERMINED (external accounting gate). The Agreement must not assert registered/unregistered, a rate, or inclusive/exclusive treatment."
+    },
+    {
+      "id": "ownership_transfer",
+      "label": "Ownership transfer",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No ownership-transfer timing has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "portfolio_publicity_rights",
+      "label": "Portfolio & publicity",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No portfolio / publicity rights position has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "non_solicitation",
+      "label": "Non-solicitation",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No non-solicitation term has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "exclusivity",
+      "label": "Exclusivity",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No exclusivity term has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "acceptance_by_conduct",
+      "label": "Acceptance by conduct",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No acceptance-by-conduct provision has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "automatic_renewal",
+      "label": "Automatic renewal",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No automatic-renewal provision has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "minimum_subscription",
+      "label": "Minimum subscription",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No minimum subscription period has been approved. Must not be asserted as an agreed term."
+    },
+    {
+      "id": "cancellation_notice_period",
+      "label": "Cancellation notice period",
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "status": "UNRESOLVED",
+      "note": "No cancellation notice period has been approved. Must not be asserted as an agreed term."
+    }
+  ],
+  "document_control": {
+    "agreement_id": "AGR-2026-9202",
+    "version": "1.0",
+    "status": "DRAFT",
+    "created_at": "2026-08-11",
+    "supersedes": null
+  },
+  "execution": {
+    "client_signature": null,
+    "nexora_signature": null,
+    "execution_date": null
+  },
+  "_example": true,
+  "_comment": "SYNTHETIC EXAMPLE ONLY. DRAFT Agreement (AGR-2026-9202) derived from the synthetic accepted AI A2 Proposal PRP-2026-9202. Implementation fee £997 + monthly fee £697 recurring at Go-Live only. Web Care Plus £329/month paid in advance, separately identifiable. No public reference price."
+}
