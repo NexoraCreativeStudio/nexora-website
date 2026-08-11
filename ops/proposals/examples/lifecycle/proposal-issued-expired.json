@@ -1,0 +1,80 @@
+{
+  "_example": true,
+  "_comment": "SYNTHETIC EXAMPLE ONLY. Not a real proposal, no real client. Exercises the PROP.4 expiry path (PRP-2026-9103): an ISSUED proposal already past its validity window (valid_until 2026-07-01). Acceptance must be refused; the expire command must succeed deterministically.",
+  "proposal_id": "PRP-2026-9103",
+  "version": "1.0",
+  "status": "SENT",
+  "issue_date": "2026-06-01",
+  "valid_until": "2026-07-01",
+  "client": {
+    "name": "Example Aesthetics Ltd",
+    "company": "Example Aesthetics Ltd",
+    "contact": {
+      "name": "Alex Sample",
+      "email": "example.aesthetics@example.com",
+      "phone": "01234 000 000"
+    }
+  },
+  "project": {
+    "title": "Example Aesthetics — Grow website rebuild (expired)",
+    "summary": "Issued Grow-package website rebuild that was not accepted within its 30-day validity window.",
+    "objectives": [
+      "Modern, conversion-focused clinic website",
+      "Online booking integration"
+    ]
+  },
+  "offering": {
+    "code": "B2",
+    "category": "WEB",
+    "name": "Grow"
+  },
+  "scope": {
+    "included": [
+      "Website design and build (Grow package scope)"
+    ],
+    "deliverables": [
+      "Responsive website (desktop and mobile)"
+    ],
+    "exclusions": [
+      "Ongoing changes after go-live (Web Care is separate and optional)"
+    ]
+  },
+  "timeline": {
+    "estimated_delivery": "6 weeks from approval",
+    "notes": "Estimated; final schedule confirmed at agreement"
+  },
+  "commercial_schedule": {
+    "currency": "GBP",
+    "reference_price": { "from": 4250 },
+    "approved_final_project_price": 5100,
+    "setup_fee": null,
+    "payment_schedule": [40, 30, 30],
+    "recurring_fees": null,
+    "care": null,
+    "warranty": {
+      "code": "W90",
+      "label": "90-day Web Launch Warranty",
+      "applies": true
+    },
+    "vat": {
+      "status": "UNDETERMINED",
+      "note": "VAT status is unresolved; no tax determination is made in this proposal."
+    }
+  },
+  "client_responsibilities": [
+    "Timely feedback on content and design review stages"
+  ],
+  "assumptions": [
+    "Proposal validity was 30 days from issue; this synthetic instance is intentionally past validity"
+  ],
+  "next_steps": [
+    "A new Proposal version/lineage would be issued for a revised offer"
+  ],
+  "acceptance": {
+    "method": "written",
+    "provider": null,
+    "status": "PENDING",
+    "accepted_by": null,
+    "accepted_at": null
+  }
+}

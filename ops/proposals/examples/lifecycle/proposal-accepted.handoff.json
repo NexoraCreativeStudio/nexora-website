@@ -1,0 +1,60 @@
+{
+  "schema": "nexora-agreement-handoff/v1",
+  "status": "READY_FOR_AGREEMENT",
+  "proposal": {
+    "proposal_id": "PRP-2026-9104",
+    "version": "1.0"
+  },
+  "acceptance": {
+    "accepted_at": "2026-08-01",
+    "accepted_by_name": "Alex Sample",
+    "acceptance_method": "written",
+    "content_sha256": "be5e20ab768b53640036955cd75f0d049cdef869b48576f9715c623677c2ad3e",
+    "canonical_format": "nexora-proposal-canonical/v1"
+  },
+  "client": {
+    "name": "Example Aesthetics Ltd",
+    "company": "Example Aesthetics Ltd",
+    "contact": {
+      "name": "Alex Sample",
+      "email": "example.aesthetics@example.com",
+      "phone": "01234 000 000"
+    }
+  },
+  "project": {
+    "title": "Example Aesthetics — Grow website rebuild (accepted)",
+    "summary": "Accepted Grow-package website rebuild for the Example Aesthetics clinic."
+  },
+  "offering": {
+    "code": "B2",
+    "category": "WEB",
+    "name": "Grow"
+  },
+  "commercial_snapshot": {
+    "currency": "GBP",
+    "reference_price": {
+      "from": 4250
+    },
+    "approved_final_project_price": 5100,
+    "setup_fee": null,
+    "payment_schedule": [
+      40,
+      30,
+      30
+    ],
+    "recurring_fees": null,
+    "care": null,
+    "warranty": {
+      "code": "W90",
+      "label": "90-day Web Launch Warranty",
+      "applies": true
+    },
+    "vat": {
+      "status": "UNDETERMINED",
+      "note": "VAT status is unresolved; no tax determination is made in this proposal."
+    }
+  },
+  "generated_at": "2026-08-01T12:00:00.000Z",
+  "note": "Agreement handoff artifact — NOT a contract, NOT an invoice, NOT payment. The accepted Proposal snapshot (Approved Final Project Price basis) is the commercial input for the future Agreement stage.",
+  "_example": true
+}

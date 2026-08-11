@@ -203,6 +203,166 @@ No external PDF engine or SaaS is required.
 (static safety, fixture renders, no leftover tokens, rounding determinism,
 overwrite protection, and 12 negative tests proving generation fails closed).
 
+## Proposal lifecycle (PROP.4)
+
+Governed lifecycle + auditability around a Proposal **after** it has been
+generated: `DRAFT → ISSUED → ACCEPTED / DECLINED / EXPIRED / SUPERSEDED`, plus
+a controlled machine-readable handoff from an ACCEPTED Proposal toward the future
+Agreement stage. This is governance, versioning and auditability — **not** an
+e-signature implementation, **not** the Agreement generator, **not** invoicing,
+and **not** payment processing.
+
+### Lifecycle states (canonical)
+
+Reuses the PROP.1 status model, extended with one new state (`DECLINED`). No
+competing concepts:
+
+| Canonical status | Meaning |
+|---|---|
+| `DRAFT` | Being authored; content may change freely |
+| `INTERNAL_APPROVED` | Internally approved, not yet issued |
+| `SENT` | Issued to the client (the task's "ISSUED") |
+| `CLIENT_ACCEPTED` | Accepted by the client — **commercial snapshot frozen, immutable** |
+| `DECLINED` | Client declined — terminal |
+| `EXPIRED` | Validity window passed — terminal |
+| `SUPERSEDED` | Replaced by a newer version — terminal |
+
+### Valid transitions
+
+Explicit, forward-only, fail-closed. No arbitrary backwards transitions. Terminal
+statuses (`CLIENT_ACCEPTED`, `DECLINED`, `EXPIRED`, `SUPERSEDED`) have **no**
+outgoing transitions.
+
+```
+DRAFT              -> INTERNAL_APPROVED | SENT
+INTERNAL_APPROVED  -> SENT
+SENT               -> CLIENT_ACCEPTED | DECLINED | EXPIRED | SUPERSEDED
+```
+
+### Issue workflow
+
+`node ops/proposals/proposal-lifecycle.mjs issue <proposal.json>` moves a
+`DRAFT`/`INTERNAL_APPROVED` Proposal to `SENT`. The Proposal is fully re-validated
+through the shared PROP.1 core first (any legacy/VAT/drift content blocks the
+operation). `issue_date` / `valid_until` are authored at creation; `issue` is the
+controlled publication gate and never changes dates.
+
+### Expiry
+
+`valid_until = issue_date + 30 days` (frozen `proposal_validity_days`), preserved
+from PROP.1. A Proposal is **expired** when the acceptance date `> valid_until`
+(`valid_until` is inclusive). Acceptance of an expired Proposal is **refused** —
+no grace periods. `expire <proposal.json> [--as-of YYYY-MM-DD]` marks an expired
+`SENT` Proposal `EXPIRED` deterministically and cannot be forced early. Proposal
+validity (30 days) is **not** the invoice due date (7 calendar days).
+
+### Acceptance record
+
+`accept <proposal.json> --by "<name>" [--method <m>] [--date YYYY-MM-DD]` moves a
+valid, unexpired `SENT` Proposal to `CLIENT_ACCEPTED` and writes a machine-readable
+acceptance record to `ops/proposals/private/acceptance/{id}-v{version}.acceptance.json`
+(gitignored). The record captures only governance-safe metadata:
+
+- `proposal_id`, `version`
+- `accepted_at`, `accepted_by_name`, `acceptance_method`
+- `content_sha256` (canonical SHA-256 fingerprint of the accepted content)
+- `canonical_format`, `recorded_at`
+
+**Acceptance record ≠ e-signature.** No signature-provider IDs, legal identity
+verification, IP-address proof, certificate IDs, or enforceability claims are
+recorded. `provider` stays null (`E-SIGNATURE PROVIDER — OWNER DECISION REQUIRED`).
+
+### Fingerprinting
+
+`verify <proposal.json> [--record <path>]` proves **which version was accepted**:
+
+- **What is hashed:** the full governed Proposal content, excluding only the
+  fixture markers (`_example`, `_comment`). Status and acceptance metadata ARE
+  included, so the fingerprint captures the exact accepted state.
+- **Canonicalisation:** keys sorted recursively, compact JSON (UTF-8). Whitespace
+  and key order are normalised, so a cosmetic re-format does **not** change the
+  fingerprint — any change to governed content does.
+- **When:** computed at the moment of acceptance (after the `CLIENT_ACCEPTED`
+  transition) and stored in the acceptance record.
+- **How verification works:** `verify` re-canonicalises the current file and
+  compares to the recorded fingerprint. A modified accepted Proposal **fails
+  verification** and is refused everywhere (verify, handoff).
+
+### Accepted immutability
+
+Once `CLIENT_ACCEPTED`, the commercial snapshot is immutable: `proposal_id`,
+`version`, client identity, offering, scope, timeline, Approved Final Project
+Price, reference snapshot, setup/implementation fee, payment schedule, recurring
+fees, Care, Warranty, VAT, issue/valid-until dates and acceptance metadata. There
+are **no outgoing transitions** and the fingerprint detects any silent edit. If
+commercial terms must change after acceptance, **create a new Proposal version** —
+never mutate the accepted historical version.
+
+### Versioning & supersession
+
+- `proposal_id` = stable lineage; `version` = document version (`x.y`).
+- A revised Proposal is a **new version**, optionally carrying
+  `supersedes: { proposal_id, version, reason }` pointing to the version it
+  replaces (a superseding version must be **higher**).
+- `supersede <proposal.json> --by <new_id> --version <x.y> [--reason "<r>"]` moves
+  an issued-but-unaccepted (`SENT`) Proposal to `SUPERSEDED` and records
+  `superseded_by`.
+- Accepted Proposals are never re-labelled: a post-acceptance revision is a new
+  version whose `supersedes` reference links the lineage, while the accepted
+  historical version stays `CLIENT_ACCEPTED` (immutable). No silent replacement —
+  acceptance records and handoffs refuse overwrite without `--overwrite`.
+
+### Agreement handoff
+
+`handoff <proposal.json> [--record <path>] [--output <path>]` emits a
+machine-readable handoff artifact to
+`ops/proposals/private/handoffs/{id}-v{version}.handoff.json` (gitignored) —
+**only from an ACCEPTED Proposal whose fingerprint still verifies**. It carries
+proposal identity/version, client/project identity, offering, the accepted
+commercial snapshot (Approved Final Project Price, payment schedule, recurring
+components, Care, Warranty, VAT), and the acceptance record + fingerprint.
+
+**Agreement handoff ≠ Agreement.** The handoff is not a contract, contains no
+invented legal clauses, and does not generate an Agreement. It is a trustworthy
+input for future PROP work — the accepted Proposal snapshot is the commercial
+basis for the future Agreement.
+
+### Private-data workflow
+
+- Real proposals, acceptance records and handoffs live under
+  `ops/proposals/private/` (gitignored) — never committed.
+- Committed fixtures live in `ops/proposals/examples/lifecycle/` and **must** carry
+  `"_example": true` (enforced). Only synthetic data (`@example.com` contacts,
+  fictional client names) is committed.
+- Generated Proposal HTML stays in `ops/proposals/out/` (gitignored).
+
+### CLI usage
+
+```
+node ops/proposals/proposal-lifecycle.mjs issue     <proposal.json>
+node ops/proposals/proposal-lifecycle.mjs accept    <proposal.json> --by "<name>" [--method <m>] [--date YYYY-MM-DD] [--record <path>]
+node ops/proposals/proposal-lifecycle.mjs decline   <proposal.json>
+node ops/proposals/proposal-lifecycle.mjs expire    <proposal.json> [--as-of YYYY-MM-DD]
+node ops/proposals/proposal-lifecycle.mjs supersede <proposal.json> --by <proposal_id> --version <x.y> [--reason "<r>"]
+node ops/proposals/proposal-lifecycle.mjs verify    <proposal.json> [--record <path>]
+node ops/proposals/proposal-lifecycle.mjs handoff   <proposal.json> [--record <path>] [--output <path>]
+```
+
+Input safety mirrors the generator: real proposals from `private/` (no marker
+needed), synthetic fixtures from `examples/` (`_example: true`), any other path
+refused. Every operation re-validates through the shared PROP.1 core.
+
+**Lifecycle validation:** `node ops/proposals/validate-proposal-lifecycle.mjs`
+(static safety, transition model, fingerprint determinism, positive flows, and
+negative tests that must fail closed — invalid transitions, expired/declined
+acceptance, tampering, accepted-version overwrite, handoff from non-accepted
+states, legacy Starter/£250, unsupported VAT, commercial Source-of-Truth drift).
+
+**What PROP.4 does NOT implement:** Proposal acceptance record ≠ e-signature;
+Agreement handoff ≠ Agreement; Accepted Proposal ≠ invoice; **no payment is
+collected by PROP.4.** E-signature, the Agreement generator, invoicing and
+payment processing remain separate (later PROP units / external gates).
+
 ## What this Proposal System does NOT yet implement
 
 This is **not yet**:
@@ -210,6 +370,7 @@ This is **not yet**:
 - an Agreement / contract generator
 - an e-signature system
 - an invoicing engine
+- payment collection
 - automated PDF rendering (output is print-ready; PDF is produced by the browser
   via Print → Save as PDF)
 
