@@ -26,3 +26,11 @@ ops/agreements/out/
 # Committed fixtures under ops/proposals/examples/ and ops/agreements/examples/ are synthetic.
 ops/documents/private/
 ops/documents/out/
+
+# Agreement Execution System (PROP.7) — execution packages, execution records, evidence,
+# audit trails and executed bundles are private. Never commit real signer names/emails,
+# real signatures, provider responses, provider request/document ids, or execution evidence.
+# Committed fixtures under ops/execution/examples/ are synthetic only and must carry
+# "_example": true. The real e-signature provider is unresolved (OWNER DECISION REQUIRED).
+ops/execution/private/
+ops/execution/out/
