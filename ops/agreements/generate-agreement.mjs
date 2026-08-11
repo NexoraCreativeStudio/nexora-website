@@ -86,7 +86,7 @@ function siblingFor(file, from, to) {
   return path.join(path.dirname(file), base);
 }
 
-function resolveProvenanceFiles(handoffPath, kind, opts) {
+export function resolveProvenanceFiles(handoffPath, kind, opts) {
   const id = opts.proposalId;
   const ver = opts.proposalVersion;
 

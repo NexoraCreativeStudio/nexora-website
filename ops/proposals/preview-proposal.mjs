@@ -133,9 +133,16 @@ function parse(tokens) {
       stack[stack.length - 1].children.push(node);
       stack.push(node);
     } else if (tag === 'else') {
+      /* Switch the collection target to elseChildren WITHOUT discarding the
+         if-branch content already collected in node.children. The original
+         node stays in the tree (referenced by its parent); only the stack
+         top is replaced by a pass-through target so subsequent tokens land
+         in elseChildren. (The old code repointed node.children at the same
+         array, orphaning the if-branch so {{#if}}A{{else}}B{{/if}} always
+         rendered B.) */
       const node = stack[stack.length - 1];
       if (!node.elseChildren) node.elseChildren = [];
-      node.children = node.elseChildren;
+      stack[stack.length - 1] = { type: node.type, name: node.name, children: node.elseChildren, elseChildren: node.elseChildren };
     } else if (close) {
       stack.pop();
     } else {

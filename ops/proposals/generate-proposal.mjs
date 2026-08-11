@@ -129,7 +129,7 @@ export function renderProposalDocument(data, opts = {}) {
     '<!--',
     `  Nexora Proposal Generator v${GENERATOR_VERSION} · schema nexora-proposal-schema-v1`,
     `  source: ${path.basename(sourceLabel)} · proposal_id: ${data.proposal_id} · version: ${data.version}`,
-    `  generated: ${new Date().toISOString()}`,
+    `  generated: ${opts.generatedStamp || new Date().toISOString()}`,
     '  This document is a Proposal and is not a contract.',
     '-->'
   ].join('\n');
@@ -151,6 +151,7 @@ Options:
   --example        Render the synthetic B2 example (examples/sample-proposal.json)
   --output <path>  Write to <path> (default: ops/proposals/out/{proposal_id}-v{version}.html)
   --overwrite      Allow replacing an existing output for the same proposal_id + version
+  --generated-at <ISO>  Deterministic timestamp override (document output system, tests)
   --check          Validate only (no render); exit 0 if the proposal is generation-safe
   --help           Show this help
 
@@ -175,12 +176,14 @@ function main() {
   let checkOnly = false;
   let wantExample = false;
   let help = false;
+  let generatedAt = null;
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--example') wantExample = true;
     else if (a === '--output') { output = args[++i]; }
     else if (a === '--overwrite') overwrite = true;
+    else if (a === '--generated-at') { generatedAt = args[++i]; }
     else if (a === '--check') checkOnly = true;
     else if (a === '--help' || a === '-h') help = true;
     else if (a.startsWith('-')) { usage(process.stderr); return 2; }
@@ -232,7 +235,7 @@ function main() {
     return 0;
   }
 
-  const html = renderProposalDocument(data, { sourceLabel: sourcePath });
+  const html = renderProposalDocument(data, { sourceLabel: sourcePath, generatedStamp: generatedAt || undefined });
   const outPath = output ? path.resolve(output) : defaultOutputPath(data.proposal_id, data.version);
 
   if (fs.existsSync(outPath) && !overwrite) {
