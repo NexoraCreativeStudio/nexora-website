@@ -1,0 +1,193 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "nexora-agreement-v1",
+  "title": "Nexora Agreement",
+  "description": "Machine-readable model for a governed Nexora Agreement (PROP.5). Consumes the PROP.4 Agreement Handoff (only from a CLIENT_ACCEPTED, fingerprint-verified Proposal). An Agreement is NOT a Proposal and NOT a contract: this model records the governed commercial inheritance, provenance, legal-decision classification, document control and execution placeholders. READY_FOR_EXECUTION requires every mandatory legal/commercial decision to be resolved through an approved source; SIGNED/executed state is NOT modelled (e-signature / execution are separate external gates). Authoritative pricing is never stored independently here — the commercial_schedule is inherited verbatim from the accepted Proposal/Handoff and re-validated against ops/billing-source-of-truth.json. VAT is UNDETERMINED and must never be asserted.",
+  "type": "object",
+  "required": [
+    "schema",
+    "agreement_id",
+    "version",
+    "status",
+    "created_at",
+    "proposal",
+    "provenance",
+    "client",
+    "project",
+    "offering",
+    "commercial_schedule",
+    "legal_sections",
+    "document_control",
+    "execution"
+  ],
+  "properties": {
+    "schema": { "const": "nexora-agreement/v1" },
+    "agreement_id": {
+      "type": "string",
+      "pattern": "^AGR-\\d{4}-\\d{4}$",
+      "description": "Agreement lineage identifier, e.g. AGR-2026-9104 (traceable to the source Proposal PRP-2026-9104) or the sequential AGR-YYYY-NNNN form. Not a commercial change."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "Agreement document version (x.y). A revision is a new version, never a silent mutation."
+    },
+    "status": {
+      "enum": ["DRAFT", "READY_FOR_EXECUTION"],
+      "description": "DRAFT = may contain unresolved LEGAL_DECISION_REQUIRED provisions, clearly labelled NOT FOR EXECUTION. READY_FOR_EXECUTION = every mandatory legal/commercial decision resolved through an approved source and all integrity checks pass. SIGNED is NOT modelled — execution/signature is a separate external gate."
+    },
+    "created_at": { "type": "string", "format": "date", "description": "Agreement creation date (ISO)." },
+    "proposal": {
+      "type": "object",
+      "required": ["proposal_id", "version"],
+      "properties": {
+        "proposal_id": { "type": "string", "pattern": "^PRP-\\d{4}-\\d{4}$" },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+$" }
+      },
+      "description": "The accepted Proposal this Agreement is derived from."
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["proposal_fingerprint", "acceptance_record", "agreement_handoff", "handoff_fingerprint"],
+      "properties": {
+        "proposal_fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Canonical SHA-256 (nexora-proposal-canonical/v1) of the accepted Proposal content, carried from the acceptance record / handoff."
+        },
+        "acceptance_record": { "type": "string", "description": "Schema id of the acceptance record, e.g. nexora-proposal-acceptance/v1." },
+        "agreement_handoff": { "type": "string", "description": "Schema id of the Agreement handoff, e.g. nexora-agreement-handoff/v1." },
+        "handoff_fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Canonical SHA-256 of the Agreement handoff content (audit reference)."
+        }
+      }
+    },
+    "client": { "type": "object", "required": ["name", "company"] },
+    "project": { "type": "object", "required": ["title"] },
+    "offering": {
+      "type": "object",
+      "required": ["code", "category", "name"],
+      "properties": {
+        "code": { "type": "string" },
+        "category": { "enum": ["AI", "WEB", "BRAND", "ADDITIONAL"] },
+        "name": { "type": "string" }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "included": { "type": "array", "items": { "type": "string" } },
+        "deliverables": { "type": "array", "items": { "type": "string" } },
+        "exclusions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "timeline": {
+      "type": "object",
+      "properties": {
+        "estimated_delivery": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "commercial_schedule": {
+      "type": "object",
+      "required": ["currency", "approved_final_project_price"],
+      "description": "Inherited VERBATIM from the accepted Proposal / Agreement Handoff. Approved Final Project Price is the contractual commercial amount; reference/public price is informational only and never replaces it. Re-validated against ops/billing-source-of-truth.json.",
+      "properties": {
+        "currency": { "const": "GBP" },
+        "reference_price": {
+          "anyOf": [{ "$ref": "#/definitions/moneyOrRange" }, { "type": "null" }],
+          "description": "PUBLIC / BASE REFERENCE price (From or fixed) — informational, NOT the contractual amount. Absent for COMPLETE and AI."
+        },
+        "approved_final_project_price": { "$ref": "#/definitions/money", "description": "APPROVED FINAL PROJECT PRICE — the contractual commercial amount, inherited from the accepted Proposal. Governs milestone amounts and invoicing." },
+        "setup_fee": { "anyOf": [{ "$ref": "#/definitions/moneyOrRange" }, { "type": "null" }] },
+        "payment_schedule": {
+          "anyOf": [{ "type": "array", "items": { "type": "integer" }, "minItems": 1 }, { "type": "null" }],
+          "description": "Milestone percentages (frozen for standard packages; B3 per-proposal; COMPLETE 30/30/30/10). Milestone amounts derive from the Approved Final Project Price."
+        },
+        "recurring_fees": {
+          "anyOf": [
+            { "type": "object", "required": ["monthly_fee", "starts_at"], "properties": { "monthly_fee": { "$ref": "#/definitions/moneyOrRange" }, "starts_at": { "enum": ["GO_LIVE", "MONTHLY_IN_ADVANCE"] } } },
+            { "type": "null" }
+          ],
+          "description": "AI recurring starts at GO_LIVE, never before. Care is paid monthly in advance."
+        },
+        "care": {
+          "anyOf": [
+            { "type": "object", "properties": { "code": { "type": "string" }, "plan": { "type": "string" }, "monthly_fee": { "$ref": "#/definitions/moneyOrRange" }, "billed_in_advance": { "const": true } } },
+            { "type": "null" }
+          ],
+          "description": "Optional Care, monthly in advance, separately identifiable, never bundled. No AI Care."
+        },
+        "warranty": {
+          "anyOf": [
+            { "type": "object", "properties": { "code": { "type": "string" }, "label": { "const": "90-day Web Launch Warranty" }, "applies": { "type": "boolean" } } },
+            { "type": "null" }
+          ],
+          "description": "The only supported warranty claim is the governed 90-day Web Launch Warranty."
+        },
+        "vat": {
+          "type": "object",
+          "required": ["status"],
+          "additionalProperties": false,
+          "properties": {
+            "status": { "const": "UNDETERMINED" },
+            "note": { "type": "string" }
+          }
+        }
+      }
+    },
+    "client_responsibilities": { "type": "array", "items": { "type": "string" } },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "dependencies": { "type": "array", "items": { "type": "string" } },
+    "legal_sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "classification", "status", "note"],
+        "properties": {
+          "id": { "type": "string", "description": "Clause identifier from ops/agreements/legal/legal-decisions.json." },
+          "label": { "type": "string" },
+          "classification": { "enum": ["AUTHORITATIVE", "DERIVED", "CLIENT_SPECIFIC", "LEGAL_DECISION_REQUIRED"] },
+          "status": { "enum": ["RESOLVED", "UNRESOLVED"], "description": "RESOLVED only when classification is not LEGAL_DECISION_REQUIRED in the approved register." },
+          "note": { "type": "string" }
+        }
+      },
+      "description": "One entry per legal clause in the inventory. LEGAL_DECISION_REQUIRED entries render as clearly-marked unresolved provisions in a DRAFT and block READY_FOR_EXECUTION."
+    },
+    "document_control": {
+      "type": "object",
+      "required": ["agreement_id", "version", "status", "created_at"],
+      "properties": {
+        "agreement_id": { "type": "string" },
+        "version": { "type": "string" },
+        "status": { "enum": ["DRAFT", "READY_FOR_EXECUTION"] },
+        "created_at": { "type": "string" },
+        "supersedes": { "anyOf": [{ "type": "object" }, { "type": "null" }] }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "description": "Execution placeholders ONLY. Not a signature, not an e-signature, not evidence of execution. Must remain null; SIGNED is not modelled (external gate).",
+      "properties": {
+        "client_signature": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "nexora_signature": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "execution_date": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      }
+    },
+    "_example": {
+      "type": "boolean",
+      "description": "Fixture marker. MUST be true on any committed example/instance so a real Agreement is never committed by mistake."
+    }
+  },
+  "definitions": {
+    "money": { "type": "number", "minimum": 0 },
+    "moneyOrRange": {
+      "oneOf": [
+        { "$ref": "#/definitions/money" },
+        { "type": "object", "required": ["from"], "additionalProperties": false, "properties": { "from": { "$ref": "#/definitions/money" } } }
+      ]
+    }
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "schema": "nexora-legal-decisions/v1",
+  "description": "Register of legal clause classifications for Nexora Agreements (PROP.5). Every clause below is classified. Only AUTHORITATIVE / safely DERIVED / CLIENT_SPECIFIC information may be inserted as contractual content. LEGAL_DECISION_REQUIRED clauses must NOT appear as agreed terms — they are rendered in DRAFT Agreements as clearly marked unresolved provisions, and a READY_FOR_EXECUTION Agreement is refused while any mandatory clause remains LEGAL_DECISION_REQUIRED. This register is changed ONLY through the Commercial Constitution change-control process (Owner/legal decision).",
+  "classifications": ["AUTHORITATIVE", "DERIVED", "CLIENT_SPECIFIC", "LEGAL_DECISION_REQUIRED"],
+  "updated_at": "2026-08-11",
+  "clauses": {
+    "governing_law": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No governing law has been approved. Must not be asserted as an agreed term."
+    },
+    "jurisdiction": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No jurisdiction has been approved. Must not be asserted as an agreed term."
+    },
+    "dispute_resolution": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No dispute-resolution mechanism has been approved. Must not be asserted as an agreed term."
+    },
+    "limitation_of_liability": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No liability cap or exclusion has been approved. Must not be asserted as an agreed term."
+    },
+    "indemnities": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No indemnity has been approved. Must not be asserted as an agreed term."
+    },
+    "ip_ownership": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No IP ownership / assignment / licensing position has been approved. Must not be asserted as an agreed term."
+    },
+    "confidentiality": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No confidentiality obligation has been approved. Must not be asserted as an agreed term."
+    },
+    "termination": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No termination right has been approved. Must not be asserted as an agreed term."
+    },
+    "cancellation": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No cancellation right has been approved. Must not be asserted as an agreed term."
+    },
+    "refunds": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No refund position has been approved. Must not be asserted as an agreed term."
+    },
+    "late_payment_penalties": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No late-payment interest or penalty has been approved. Must not be asserted as an agreed term."
+    },
+    "debt_recovery": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No debt-recovery position has been approved. Must not be asserted as an agreed term."
+    },
+    "force_majeure": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No force majeure provision has been approved. Must not be asserted as an agreed term."
+    },
+    "data_processing": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No data-processing / controller / processor terms have been approved. Must not be asserted as an agreed term."
+    },
+    "gdpr_obligations": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No GDPR-specific contractual commitments have been approved. Must not be asserted as an agreed term."
+    },
+    "warranty_terms": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "The governed 90-day Web Launch Warranty claim may be shown as commercial data from the accepted Proposal. Any broader warranty legal terms beyond that governed claim require approval. Must not be expanded into invented warranty language."
+    },
+    "statutory_representations": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No statutory representation has been approved. Must not be asserted as an agreed term."
+    },
+    "vat_tax_treatment": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "VAT status is UNDETERMINED (external accounting gate). The Agreement must not assert registered/unregistered, a rate, or inclusive/exclusive treatment."
+    },
+    "ownership_transfer": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No ownership-transfer timing has been approved. Must not be asserted as an agreed term."
+    },
+    "portfolio_publicity_rights": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No portfolio / publicity rights position has been approved. Must not be asserted as an agreed term."
+    },
+    "non_solicitation": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No non-solicitation term has been approved. Must not be asserted as an agreed term."
+    },
+    "exclusivity": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No exclusivity term has been approved. Must not be asserted as an agreed term."
+    },
+    "acceptance_by_conduct": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No acceptance-by-conduct provision has been approved. Must not be asserted as an agreed term."
+    },
+    "automatic_renewal": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No automatic-renewal provision has been approved. Must not be asserted as an agreed term."
+    },
+    "minimum_subscription": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No minimum subscription period has been approved. Must not be asserted as an agreed term."
+    },
+    "cancellation_notice_period": {
+      "classification": "LEGAL_DECISION_REQUIRED",
+      "note": "No cancellation notice period has been approved. Must not be asserted as an agreed term."
+    }
+  }
+}
