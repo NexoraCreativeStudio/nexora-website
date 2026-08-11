@@ -1,0 +1,60 @@
+{
+  "schema": "nexora-billing-source-of-truth/v1",
+  "description": "Single machine-readable source for Nexora billing truth. Human mirror: BILLING-SOURCE-OF-TRUTH.md. Validated by validate-ops.mjs. Any change requires a commercial freeze decision.",
+  "currency": "GBP",
+  "ai": {
+    "note": "Implementation fee and recurring monthly fee are separate. Recurring billing starts at Go-Live. AI support is included within the relevant subscription. No AI Care. No separate standard AI support invoice.",
+    "plans": {
+      "A1": { "name": "AI Reception", "implementation_fee": 497, "monthly_fee": 297 },
+      "A2": { "name": "AI Growth", "implementation_fee": 997, "monthly_fee": 697 },
+      "A3": { "name": "AI Scale", "implementation_fee": { "from": 1995 }, "monthly_fee": { "from": 1495 } }
+    },
+    "recurring_start": "GO_LIVE",
+    "ai_care": false
+  },
+  "web": {
+    "note": "B3 is bespoke. There is no standard B3 percentage schedule; the schedule is defined per-proposal. Final handover remains subject to the required project balance being paid.",
+    "packages": {
+      "B1": { "name": "Launch", "price": { "from": 2250 }, "schedule": [50, 50] },
+      "B2": { "name": "Grow", "price": { "from": 4250 }, "schedule": [40, 30, 30] },
+      "B3": { "name": "Scale", "price": { "from": 8500, "bespoke": true }, "schedule": "BESPOKE_MILESTONE_SCHEDULE" }
+    },
+    "final_handover": "AFTER_PROJECT_BALANCE_PAID"
+  },
+  "brand": {
+    "packages": {
+      "C1": { "name": "Brand Foundation", "price": 2250, "schedule": [50, 50] },
+      "C2": { "name": "Brand System", "price": { "from": 5250 }, "schedule": [40, 30, 30] },
+      "C3": { "name": "Signature Brand", "price": { "from": 8500, "bespoke": true }, "schedule": [40, 30, 20, 10] }
+    }
+  },
+  "complete": {
+    "schedule": [30, 30, 30, 10],
+    "note": "The 30/30/30/10 schedule totals 100%. The first 30% is part of the total, not an additional deposit. Never bill a 30% deposit plus 100% of the project. AI implementation remains commercially identifiable where applicable. AI recurring starts at Go-Live. Care remains optional."
+  },
+  "care": {
+    "note": "Monthly, paid in advance. No indefinite rollover. Care is separately identifiable from project invoices and is never silently bundled into the project price.",
+    "web": {
+      "essential": { "name": "Web Care Essential", "monthly_fee": 249, "capacity_minutes": 60 },
+      "plus": { "name": "Web Care Plus", "monthly_fee": 329, "capacity_minutes": 90, "priority_queue": true }
+    },
+    "brand": {
+      "standard": { "name": "Brand & Creative Care Standard", "monthly_fee": { "from": 599 }, "capacity_hours": 3, "active_requests": 1 },
+      "extended": { "name": "Brand & Creative Care Extended", "monthly_fee": 949, "capacity_hours": 5 }
+    }
+  },
+  "invoice_terms": {
+    "project_invoice_due_days": 7,
+    "proposal_validity_days": 30,
+    "note": "Proposal expiry (30 days) is not the invoice due date (7 calendar days). The proposal validity and the invoice due date are separate concepts."
+  },
+  "change_requests": {
+    "immaterial": "ADDED_TO_NEXT_INVOICE_AFTER_WRITTEN_CONFIRMATION",
+    "material": "PAID_IN_ADVANCE_BEFORE_WORK_STARTS",
+    "large": "SEPARATE_PROPOSAL_OR_PROJECT"
+  },
+  "vat": {
+    "status": "UNDETERMINED",
+    "note": "VAT status is NOT commercially resolved. Do not assert registered/unregistered, 20%, inclusive or exclusive without validated accounting input. Invoice templates must support tax fields without making a tax determination."
+  }
+}

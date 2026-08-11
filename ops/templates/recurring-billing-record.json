@@ -1,0 +1,18 @@
+{
+  "_comment": "Nexora recurring billing record — one record per recurring client. AI recurring starts AT GO-LIVE only; the go_live_date is recorded, never inferred from memory or informal chat. Care is separately identifiable.",
+  "_example": {
+    "client": "Example Aesthetics Ltd",
+    "service": "A2 · AI Growth",
+    "package": "AI Growth",
+    "monthly_amount": 697.00,
+    "currency": "GBP",
+    "billing_start_date": "2026-09-01",
+    "go_live_date": "2026-08-25",
+    "next_billing_date": "2026-10-01",
+    "payment_method": "TBC — provider activation is an Owner action",
+    "status": "ACTIVE",
+    "care": null,
+    "care_monthly_amount": null,
+    "paused_or_cancelled": null
+  }
+}
