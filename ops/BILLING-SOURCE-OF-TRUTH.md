@@ -1,6 +1,6 @@
 # Nexora — Billing Source of Truth (operational mirror)
 
-This file is the human-readable mirror of **`ops/billing-source-of-truth.json`** — the single machine-readable source. Validate with `node ops/validate-ops.mjs`. These values are **commercially frozen**; any change requires a freeze decision, not an operational one. Where this file and the JSON disagree, the JSON is authoritative.
+This file is the human-readable mirror of **`ops/billing-source-of-truth.json`** — the single machine-readable source. Validate with `node ops/validate-ops.mjs`. These values are **commercially frozen**; any change requires a freeze decision, not an operational one. Where this file and the JSON disagree, the JSON is authoritative. Governance authority: **`docs/constitution/COMMERCIAL-CONSTITUTION.md`**.
 
 ## AI (A1 / A2 / A3)
 

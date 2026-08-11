@@ -52,3 +52,7 @@ It exists so that no build step or refactor can silently alter the live English 
 - [x] B  — German content + validate `/de/`
 - [x] C  — language switcher + reciprocal hreflang + sitemap + promotion decision
 - [x] C5 — English/German homepage promotion (baseline updated to promoted root)
+
+## Scope note
+
+This file is the **technical/build baseline** for the generated multilingual homepage. It is **not** a commercial source of truth. The commercial authority is `docs/constitution/COMMERCIAL-CONSTITUTION.md` with structured facts in `ops/billing-source-of-truth.json`.

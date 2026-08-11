@@ -6,6 +6,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Nexora Creative Studio** - A marketing website and platform documentation system for AI receptionist and growth automation services for UK aesthetic clinics. The codebase consists of static HTML, CSS, and JavaScript files organized as a multi-page marketing site.
 
+## Commercial Governance (READ BEFORE COMMERCIAL CHANGES)
+
+The repository has a frozen commercial constitution. Before changing **pricing, packages, billing, Care, Proposal architecture, Nexora Complete, AI recurring rules, or any commercial sales logic**, you MUST read:
+
+1. **`docs/constitution/COMMERCIAL-CONSTITUTION.md`** — the constitutional governance (freeze scope, anti-drift, change control, gates).
+2. **`ops/billing-source-of-truth.json`** — the authoritative structured source of frozen commercial facts.
+3. **`ops/BILLING-SOURCE-OF-TRUTH.md`** — the human-readable mirror.
+
+Rules:
+
+- Downstream implementation (website, proposals, invoices, SEO/conversion copy) does **not** override the authoritative source.
+- Frozen rules change only via the change-control process in the Constitution (proposal → impact review → Owner approval → source update → validation → feature branch → PR → merge) — never via SEO, conversion, copywriting, developer preference, or AI suggestion.
+- This file is a pointer, not a pricing database — do not duplicate the frozen figures here.
+- Validate after any commercial change: `node ops/validate-ops.mjs` and `node ops/validate-website.mjs` (plus `node build.js` + `node verify.js`).
+
 ## Architecture
 
 ### High-Level Structure
