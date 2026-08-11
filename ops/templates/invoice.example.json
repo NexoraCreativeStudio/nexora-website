@@ -1,0 +1,31 @@
+{
+  "_comment": "Nexora invoice data structure (example). VAT is UNDETERMINED — tax fields are supported but carry no tax determination. Milestones are calculated from the APPROVED FINAL PROJECT PRICE (proposal), never the public 'From' price. This is an example, not a real invoice.",
+  "invoice_number": "NX-INV-2026-0001",
+  "issue_date": "2026-08-15",
+  "due_date": "2026-08-22",
+  "client_legal_name": "Example Aesthetics Ltd",
+  "client_billing_details": {
+    "billing_address": "12 Harley Street, London",
+    "billing_email": "accounts@example-aesthetics.co.uk",
+    "po_reference": null
+  },
+  "service_reference": "B2 · Grow website build — milestone 1 of 3",
+  "proposal_reference": "PRP-2026-0018",
+  "agreement_reference": "AGR-2026-0018",
+  "line_items": [
+    {
+      "description": "Grow website build — milestone 1 (40%)",
+      "quantity": 1,
+      "unit_price": 2040.00,
+      "line_total": 2040.00
+    }
+  ],
+  "subtotal": 2040.00,
+  "tax_status": "UNDETERMINED",
+  "tax_amount": null,
+  "total_due": 2040.00,
+  "currency": "GBP",
+  "payment_method": "Bank transfer — details supplied separately (provider activation is an Owner action)",
+  "payment_status": "DRAFT",
+  "notes": "Approved final project price £5,100.00 (proposal PRP-2026-0018); milestone 1 = 40% of the approved final price. Public starting price was From £4,250 and does not govern."
+}

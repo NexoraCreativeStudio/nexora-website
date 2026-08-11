@@ -1,2 +1,8 @@
 # Build output — generated multilingual pages. Never commit generated artifacts.
 dist/
+
+# Local environment / secrets — never commit real credentials.
+# ops/payment-integration/.env.example is the tracked placeholder template.
+.env
+.env.*
+!.env.example
