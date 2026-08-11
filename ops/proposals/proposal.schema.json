@@ -1,0 +1,191 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "nexora-proposal-schema-v1",
+  "title": "Nexora Client Proposal",
+  "description": "Core machine-readable model for a Nexora Client Proposal / Commercial Schedule. This is a commercial document model, NOT a legal contract. It models the Proposal and the approved commercial record that governs invoicing. Authoritative pricing is never stored here — it resolves from ops/billing-source-of-truth.json via ops/proposals/package-mapping.json (see validate-proposals.mjs). All prices are in GBP. VAT is UNDETERMINED and must never be asserted. Enforcement subset: ops/proposals/validate-proposals.mjs.",
+  "type": "object",
+  "required": [
+    "proposal_id",
+    "version",
+    "status",
+    "issue_date",
+    "valid_until",
+    "client",
+    "project",
+    "offering",
+    "commercial_schedule",
+    "next_steps"
+  ],
+  "properties": {
+    "proposal_id": {
+      "type": "string",
+      "pattern": "^PRP-\\d{4}-\\d{4}$",
+      "description": "Unique proposal reference, e.g. PRP-2026-0018 (format aligned with invoice.example.json). Generator-assigned; not a commercial change."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "Proposal version, e.g. 1.0, 1.1. An accepted proposal is immutable; revisions get a new version / proposal_id (see README)."
+    },
+    "status": {
+      "enum": ["DRAFT", "INTERNAL_APPROVED", "SENT", "CLIENT_ACCEPTED", "EXPIRED", "SUPERSEDED"],
+      "description": "Proposal lifecycle status. CLIENT_ACCEPTED freezes the commercial schedule."
+    },
+    "issue_date": { "type": "string", "format": "date" },
+    "valid_until": {
+      "type": "string",
+      "format": "date",
+      "description": "issue_date + proposal_validity_days (30) from ops/billing-source-of-truth.json invoice_terms. Distinct from invoice due date (7 calendar days)."
+    },
+    "client": {
+      "type": "object",
+      "required": ["name", "company", "contact"],
+      "properties": {
+        "name": { "type": "string" },
+        "company": { "type": "string" },
+        "contact": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "email": { "type": "string" },
+            "phone": { "type": "string" }
+          }
+        }
+      }
+    },
+    "project": {
+      "type": "object",
+      "required": ["title", "summary", "objectives"],
+      "properties": {
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "objectives": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "offering": {
+      "type": "object",
+      "required": ["code", "category", "name"],
+      "properties": {
+        "code": { "type": "string", "description": "Offering identifier from ops/proposals/package-mapping.json (A1-A3/B1-B3/C1-C3/COMPLETE/WEB_CARE/BRAND_CARE)." },
+        "category": { "enum": ["AI", "WEB", "BRAND", "ADDITIONAL"] },
+        "name": { "type": "string", "description": "Authoritative offering name (cross-checked against billing-source-of-truth.json)." }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "included": { "type": "array", "items": { "type": "string" } },
+        "deliverables": { "type": "array", "items": { "type": "string" } },
+        "exclusions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "timeline": {
+      "type": "object",
+      "properties": {
+        "estimated_delivery": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "commercial_schedule": {
+      "type": "object",
+      "required": ["currency", "approved_final_project_price"],
+      "properties": {
+        "currency": { "const": "GBP", "description": "Matches billing-source-of-truth.json currency." },
+        "reference_price": {
+          "anyOf": [{ "$ref": "#/definitions/moneyOrRange" }, { "type": "null" }],
+          "description": "PUBLIC / BASE REFERENCE price (From or fixed) resolved from billing-source-of-truth.json. Web/Brand only. NOT the contractual price. Must be absent for COMPLETE (bespoke, no public price) and AI (no single package price)."
+        },
+        "approved_final_project_price": {
+          "$ref": "#/definitions/money",
+          "description": "APPROVED FINAL PROJECT PRICE. Client-specific, approved, recorded. This governs invoicing (INVOICE-FLOW.md §5), NOT the public From price. May legitimately differ from reference_price for From/bespoke offerings."
+        },
+        "setup_fee": {
+          "anyOf": [{ "$ref": "#/definitions/moneyOrRange" }, { "type": "null" }],
+          "description": "AI implementation fee (A1 £497, A2 £997, A3 From £1,995). Null/absent for Web/Brand/Care (no separate setup fee)."
+        },
+        "payment_schedule": {
+          "anyOf": [{ "type": "array", "items": { "type": "integer" }, "minItems": 1 }, { "type": "null" }],
+          "description": "Milestone percentages. Must match the frozen schedule for standard packages; B3 is a recorded per-proposal schedule (sums to 100); COMPLETE is 30/30/30/10. AI/Care: not governed — null."
+        },
+        "recurring_fees": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": ["monthly_fee", "starts_at"],
+              "properties": {
+                "monthly_fee": { "$ref": "#/definitions/moneyOrRange" },
+                "starts_at": { "enum": ["GO_LIVE", "MONTHLY_IN_ADVANCE"] }
+              }
+            },
+            { "type": "null" }
+          ],
+          "description": "AI: monthly fee (A1 £297, A2 £697, A3 From £1,495) starting at GO_LIVE. Care: monthly in advance. Web/Brand packages without Care: null."
+        },
+        "care": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "code": { "type": "string", "description": "Care plan: WEB_CARE_ESSENTIAL / WEB_CARE_PLUS / BRAND_CARE_STANDARD / BRAND_CARE_EXTENDED." },
+                "plan": { "type": "string" },
+                "monthly_fee": { "$ref": "#/definitions/moneyOrRange" },
+                "billed_in_advance": { "const": true }
+              }
+            },
+            { "type": "null" }
+          ],
+          "description": "Optional Care. Monthly in advance, no indefinite rollover, separately identifiable from the project price (never bundled)."
+        },
+        "warranty": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "code": { "type": "string" },
+                "label": { "const": "90-day Web Launch Warranty" },
+                "applies": { "type": "boolean" }
+              }
+            },
+            { "type": "null" }
+          ],
+          "description": "The only supported warranty claim is the governed 90-day Web Launch Warranty (qualifying delivery defects; not Care/maintenance/new scope)."
+        },
+        "vat": {
+          "type": "object",
+          "required": ["status"],
+          "additionalProperties": false,
+          "properties": {
+            "status": { "const": "UNDETERMINED", "description": "VAT is UNRESOLVED. No rate, registration, included/excluded assertion may be made (see ops/billing-source-of-truth.json vat and the Constitution §10)." },
+            "note": { "type": "string" }
+          }
+        }
+      }
+    },
+    "client_responsibilities": { "type": "array", "items": { "type": "string" } },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "next_steps": { "type": "array", "items": { "type": "string" } },
+    "acceptance": {
+      "type": "object",
+      "properties": {
+        "method": { "type": "string", "description": "Provider-neutral acceptance method (written / signed PDF / e-sign placeholders). No provider is configured." },
+        "provider": { "anyOf": [{ "type": "string" }, { "type": "null" }], "description": "E-SIGNATURE PROVIDER — OWNER DECISION REQUIRED. Null until chosen." },
+        "status": { "enum": ["PENDING", "ACCEPTED"] },
+        "accepted_by": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "accepted_at": { "anyOf": [{ "type": "string", "format": "date" }, { "type": "null" }] }
+      }
+    },
+    "_example": {
+      "type": "boolean",
+      "description": "Fixture marker. MUST be true on any committed example/instance so a real client proposal is never committed by mistake."
+    }
+  },
+  "definitions": {
+    "money": { "type": "number", "minimum": 0 },
+    "moneyOrRange": {
+      "oneOf": [
+        { "$ref": "#/definitions/money" },
+        { "type": "object", "required": ["from"], "additionalProperties": false, "properties": { "from": { "$ref": "#/definitions/money" } } }
+      ]
+    }
+  }
+}

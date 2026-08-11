@@ -6,3 +6,10 @@ dist/
 .env
 .env.*
 !.env.example
+
+# Proposal System — real client proposal instances and generated output are private.
+# Never commit real client data (names, emails, phones, addresses, negotiated prices,
+# signatures, accepted/signed proposals, project details). Committed fixtures under
+# ops/proposals/examples/ are synthetic only and must carry "_example": true.
+ops/proposals/private/
+ops/proposals/out/

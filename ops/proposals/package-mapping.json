@@ -1,0 +1,147 @@
+{
+  "schema": "nexora-proposal-package-mapping/v1",
+  "description": "Controlled mapping between Proposal offering identifiers and the authoritative ops/billing-source-of-truth.json. This file contains NO prices and is NOT a pricing database — every source_ref is resolved against billing-source-of-truth.json at validation time. The offering-level architecture is fixed: 9 core packages + 3 additional offerings = 12.",
+  "source_of_truth": "ops/billing-source-of-truth.json",
+  "proposal_validity_days": "DERIVED — invoice_terms.proposal_validity_days (30) from billing-source-of-truth.json",
+  "architecture": {
+    "core_packages": 9,
+    "additional_offerings": 3,
+    "total": 12
+  },
+  "offerings": [
+    {
+      "code": "A1",
+      "category": "AI",
+      "name": "AI Reception",
+      "source_ref": "ai.plans.A1",
+      "bespoke": false,
+      "has_public_price": true,
+      "schedule_bespoke": false,
+      "pricing_model": "implementation_fee + monthly_fee (separate)",
+      "recurring": "GO_LIVE"
+    },
+    {
+      "code": "A2",
+      "category": "AI",
+      "name": "AI Growth",
+      "source_ref": "ai.plans.A2",
+      "bespoke": false,
+      "has_public_price": true,
+      "schedule_bespoke": false,
+      "pricing_model": "implementation_fee + monthly_fee (separate)",
+      "recurring": "GO_LIVE"
+    },
+    {
+      "code": "A3",
+      "category": "AI",
+      "name": "AI Scale",
+      "source_ref": "ai.plans.A3",
+      "bespoke": true,
+      "has_public_price": true,
+      "schedule_bespoke": false,
+      "pricing_model": "From implementation fee + From monthly fee",
+      "recurring": "GO_LIVE"
+    },
+    {
+      "code": "B1",
+      "category": "WEB",
+      "name": "Launch",
+      "source_ref": "web.packages.B1",
+      "bespoke": false,
+      "has_public_price": true,
+      "schedule_bespoke": false,
+      "pricing_model": "project_price",
+      "recurring": "NONE"
+    },
+    {
+      "code": "B2",
+      "category": "WEB",
+      "name": "Grow",
+      "source_ref": "web.packages.B2",
+      "bespoke": false,
+      "has_public_price": true,
+      "schedule_bespoke": false,
+      "pricing_model": "project_price",
+      "recurring": "NONE"
+    },
+    {
+      "code": "B3",
+      "category": "WEB",
+      "name": "Scale",
+      "source_ref": "web.packages.B3",
+      "bespoke": true,
+      "has_public_price": true,
+      "schedule_bespoke": true,
+      "pricing_model": "bespoke project price (From £8,500 reference)",
+      "recurring": "NONE"
+    },
+    {
+      "code": "C1",
+      "category": "BRAND",
+      "name": "Brand Foundation",
+      "source_ref": "brand.packages.C1",
+      "bespoke": false,
+      "has_public_price": true,
+      "schedule_bespoke": false,
+      "pricing_model": "project_price",
+      "recurring": "NONE"
+    },
+    {
+      "code": "C2",
+      "category": "BRAND",
+      "name": "Brand System",
+      "source_ref": "brand.packages.C2",
+      "bespoke": false,
+      "has_public_price": true,
+      "schedule_bespoke": false,
+      "pricing_model": "project_price",
+      "recurring": "NONE"
+    },
+    {
+      "code": "C3",
+      "category": "BRAND",
+      "name": "Signature Brand",
+      "source_ref": "brand.packages.C3",
+      "bespoke": true,
+      "has_public_price": true,
+      "schedule_bespoke": false,
+      "pricing_model": "bespoke project price (From £8,500 reference)",
+      "recurring": "NONE"
+    },
+    {
+      "code": "COMPLETE",
+      "category": "ADDITIONAL",
+      "name": "Nexora Complete",
+      "source_ref": "complete",
+      "bespoke": true,
+      "has_public_price": false,
+      "schedule_bespoke": false,
+      "pricing_model": "scoped / bespoke — NO mechanical public price (never A+B+C, never auto-discounted)",
+      "recurring": "GO_LIVE_IF_AI"
+    },
+    {
+      "code": "WEB_CARE",
+      "category": "ADDITIONAL",
+      "name": "Web Care",
+      "source_ref": "care.web",
+      "plans": ["essential", "plus"],
+      "bespoke": false,
+      "has_public_price": true,
+      "schedule_bespoke": false,
+      "pricing_model": "monthly fee (paid in advance)",
+      "recurring": "MONTHLY_IN_ADVANCE"
+    },
+    {
+      "code": "BRAND_CARE",
+      "category": "ADDITIONAL",
+      "name": "Brand & Creative Care",
+      "source_ref": "care.brand",
+      "plans": ["standard", "extended"],
+      "bespoke": false,
+      "has_public_price": true,
+      "schedule_bespoke": false,
+      "pricing_model": "monthly fee (paid in advance)",
+      "recurring": "MONTHLY_IN_ADVANCE"
+    }
+  ]
+}
