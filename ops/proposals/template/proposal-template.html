@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{client_company}} — {{project_title}} · Nexora Client Proposal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="proposal.css">
+</head>
+<body>
+
+<!-- 1 · COVER -->
+<header class="cover">
+  <div class="cover-inner">
+    <p class="wordmark">NEXORA<span class="wordmark-sub">Creative Studio</span></p>
+    <p class="kicker">Client Proposal</p>
+    <h1 class="cover-title">{{project_title}}</h1>
+    <p class="cover-client">Prepared for {{client_company}}</p>
+    <dl class="cover-meta">
+      <div><dt>Proposal</dt><dd>{{proposal_id}}</dd></div>
+      <div><dt>Version</dt><dd>{{version}}</dd></div>
+      <div><dt>Status</dt><dd>{{status_label}}</dd></div>
+      <div><dt>Issued</dt><dd>{{issue_date}}</dd></div>
+      <div><dt>Valid until</dt><dd>{{valid_until}}</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main class="doc">
+
+  <!-- 2 · EXECUTIVE / PROJECT OVERVIEW -->
+  <section class="section">
+    <p class="sec-label">01 · Overview</p>
+    <h2>Project overview</h2>
+    <p class="lede">{{project_summary}}</p>
+    {{#if client_contact_name}}
+    <p class="meta-line">Prepared for {{client_company}}{{#if client_contact_name}} · {{client_contact_name}}{{/if}}{{#if client_email}} · {{client_email}}{{/if}}</p>
+    {{/if}}
+    {{#if project_objectives}}
+    <h3>Objectives</h3>
+    <ul class="list">
+      {{#each project_objectives}}<li>{{.}}</li>{{/each}}
+    </ul>
+    {{/if}}
+  </section>
+
+  <!-- 3 · RECOMMENDED SOLUTION -->
+  <section class="section">
+    <p class="sec-label">02 · Recommended solution</p>
+    <h2>Recommended Nexora solution</h2>
+    <div class="solution-card">
+      <div class="sol-row"><span class="sol-key">Package</span><span class="sol-val">{{offering_name}}</span></div>
+      <div class="sol-row"><span class="sol-key">Code</span><span class="sol-val mono">{{offering_code}} · {{offering_category}}</span></div>
+      <div class="sol-row"><span class="sol-key">Engagement</span><span class="sol-val">{{project_title}}</span></div>
+    </div>
+  </section>
+
+  <!-- 4 · SCOPE -->
+  <section class="section">
+    <p class="sec-label">03 · Scope</p>
+    <h2>Scope &amp; deliverables</h2>
+    {{#if scope_included}}
+    <h3>Included</h3>
+    <ul class="list">{{#each scope_included}}<li>{{.}}</li>{{/each}}</ul>
+    {{/if}}
+    {{#if scope_deliverables}}
+    <h3>Deliverables</h3>
+    <ul class="list">{{#each scope_deliverables}}<li>{{.}}</li>{{/each}}</ul>
+    {{/if}}
+    {{#if scope_exclusions}}
+    <h3>Exclusions</h3>
+    <ul class="list">{{#each scope_exclusions}}<li>{{.}}</li>{{/each}}</ul>
+    {{/if}}
+  </section>
+
+  <!-- 5 · TIMELINE -->
+  <section class="section">
+    <p class="sec-label">04 · Timeline</p>
+    <h2>Timeline</h2>
+    {{#if timeline_estimated_delivery}}
+    <p class="timeline">{{timeline_estimated_delivery}}</p>
+    {{/if}}
+    {{#if timeline_notes}}
+    <p class="note">{{timeline_notes}}</p>
+    {{/if}}
+  </section>
+
+  <!-- 6 · COMMERCIAL SCHEDULE -->
+  <section class="section commercial break">
+    <p class="sec-label">05 · Commercial Schedule</p>
+    <h2>Commercial Schedule</h2>
+
+    <div class="price-card">
+      <span class="price-kicker">Approved Final Project Price</span>
+      <span class="price-amount">{{approved_price_display}}</span>
+      <span class="price-note">Project-specific commercial amount · Currency {{currency}}</span>
+    </div>
+
+    {{#if reference_price_display}}
+    <p class="reference-note">Reference / public starting price: <span class="mono">{{reference_price_display}}</span>. The reference is a starting point and does not automatically equal the final project price.</p>
+    {{/if}}
+
+    {{#if setup_fee_display}}
+    <div class="fee-row"><span>Setup / implementation fee</span><span class="mono">{{setup_fee_display}}</span></div>
+    {{/if}}
+
+    {{#if payment_schedule_rows}}
+    <h3>Payment / milestone schedule</h3>
+    <div class="table-scroll">
+      <table class="sched">
+        <thead><tr><th></th><th>Milestone</th><th>Share</th><th class="num">Amount</th></tr></thead>
+        <tbody>
+        {{#each payment_schedule_rows}}
+        <tr><td class="idx">{{@index}}</td><td>Tranche {{@index}}</td><td class="mono num">{{pct}}%</td><td class="mono num">{{amount_display}}</td></tr>
+        {{/each}}
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Tranche amounts are calculated from the Approved Final Project Price.</p>
+    {{/if}}
+
+    {{#if recurring_monthly_display}}
+    <div class="recurring">
+      <span class="rec-label">Monthly service</span>
+      <span class="mono rec-amount">{{recurring_monthly_display}}</span>
+      <span class="rec-note">{{recurring_start_display}} · {{recurring_note}}</span>
+    </div>
+    {{/if}}
+
+    {{#if care_plan_display}}
+    <div class="care">
+      <span class="rec-label">Care plan</span>
+      <span class="mono rec-amount">{{care_monthly_display}} / month</span>
+      <span class="rec-note">{{care_plan_display}} · {{care_note}}</span>
+    </div>
+    {{/if}}
+
+    {{#if warranty_label}}
+    <div class="warranty">
+      <span class="rec-label">Warranty</span>
+      <span class="rec-note">{{warranty_label}}</span>
+    </div>
+    {{/if}}
+
+    <p class="tax-note">Amounts are stated in {{currency}}. Any applicable tax is not determined in this document and will be addressed in the applicable agreement.</p>
+  </section>
+
+  <!-- 7 · CLIENT RESPONSIBILITIES -->
+  <section class="section">
+    <p class="sec-label">06 · Client responsibilities</p>
+    <h2>Client responsibilities</h2>
+    <ul class="list">{{#each responsibilities}}<li>{{.}}</li>{{/each}}</ul>
+  </section>
+
+  <!-- 8 · ASSUMPTIONS -->
+  <section class="section">
+    <p class="sec-label">07 · Assumptions</p>
+    <h2>Assumptions &amp; dependencies</h2>
+    <ul class="list">{{#each assumptions}}<li>{{.}}</li>{{/each}}</ul>
+  </section>
+
+  <!-- 9 · NEXT STEPS -->
+  <section class="section">
+    <p class="sec-label">08 · Next steps</p>
+    <h2>Next steps</h2>
+    <ul class="list">{{#each next_steps}}<li>{{.}}</li>{{/each}}</ul>
+    <p class="note">Following acceptance, a separate commercial agreement is executed before invoicing. This Proposal is not itself a binding contract.</p>
+  </section>
+
+  <!-- 10 · ACCEPTANCE -->
+  <section class="section">
+    <p class="sec-label">09 · Acceptance</p>
+    <h2>Proposal acceptance</h2>
+    <p class="meta-line">Status: {{acceptance_status}}{{#if acceptance_method}} · Method: {{acceptance_method}}{{/if}}</p>
+    <div class="sign-block">
+      <div class="sign-line"><span>Authorised signature</span><span class="sign-space"></span></div>
+      <div class="sign-line"><span>Name</span><span class="sign-space"></span></div>
+      <div class="sign-line"><span>Date</span><span class="sign-space"></span></div>
+    </div>
+    <p class="note">Acceptance confirms the commercial scope in this Proposal. It does not replace the applicable Nexora Agreement.</p>
+  </section>
+
+  <!-- 11 · DOCUMENT CONTROL -->
+  <section class="section doc-control">
+    <p class="sec-label">10 · Document control</p>
+    <table class="doc-table">
+      <tbody>
+        <tr><th>Proposal ID</th><td>{{proposal_id}}</td></tr>
+        <tr><th>Version</th><td>{{version}}</td></tr>
+        <tr><th>Status</th><td>{{status_label}}</td></tr>
+        <tr><th>Issued</th><td>{{issue_date}}</td></tr>
+        <tr><th>Valid until</th><td>{{valid_until}}</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="doc-footer">
+    <span>Nexora Creative Studio</span>
+    <span>{{proposal_id}} · v{{version}}</span>
+    <span>This document is a Proposal and is subject to the applicable Nexora Agreement.</span>
+  </footer>
+
+</main>
+</body>
+</html>
