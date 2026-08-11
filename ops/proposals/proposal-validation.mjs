@@ -34,7 +34,7 @@ const MAPPING = JSON.parse(fs.readFileSync(path.join(proposalsDir, 'package-mapp
 const SCHEMA = JSON.parse(fs.readFileSync(path.join(proposalsDir, 'proposal.schema.json'), 'utf8'));
 
 export const EXPECTED_CODES = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3', 'COMPLETE', 'WEB_CARE', 'BRAND_CARE'];
-export const STATUSES = ['DRAFT', 'INTERNAL_APPROVED', 'SENT', 'CLIENT_ACCEPTED', 'EXPIRED', 'SUPERSEDED'];
+export const STATUSES = ['DRAFT', 'INTERNAL_APPROVED', 'SENT', 'CLIENT_ACCEPTED', 'DECLINED', 'EXPIRED', 'SUPERSEDED'];
 export const CATEGORIES = ['AI', 'WEB', 'BRAND', 'ADDITIONAL'];
 export const W90 = '90-day Web Launch Warranty';
 export const VALIDITY_DAYS = SOURCE.invoice_terms && SOURCE.invoice_terms.proposal_validity_days;

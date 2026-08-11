@@ -1,0 +1,83 @@
+{
+  "_example": true,
+  "_comment": "SYNTHETIC EXAMPLE ONLY. Not a real proposal, no real client. Exercises the PROP.4 lifecycle DRAFT state (PRP-2026-9101). Issued via: node ops/proposals/proposal-lifecycle.mjs issue <this> -> SENT.",
+  "proposal_id": "PRP-2026-9101",
+  "version": "1.0",
+  "status": "DRAFT",
+  "issue_date": "2026-07-01",
+  "valid_until": "2026-07-31",
+  "client": {
+    "name": "Example Aesthetics Ltd",
+    "company": "Example Aesthetics Ltd",
+    "contact": {
+      "name": "Alex Sample",
+      "email": "example.aesthetics@example.com",
+      "phone": "01234 000 000"
+    }
+  },
+  "project": {
+    "title": "Example Aesthetics — Grow website rebuild (draft)",
+    "summary": "Draft Grow-package website rebuild for the Example Aesthetics clinic.",
+    "objectives": [
+      "Modern, conversion-focused clinic website",
+      "Online booking integration"
+    ]
+  },
+  "offering": {
+    "code": "B2",
+    "category": "WEB",
+    "name": "Grow"
+  },
+  "scope": {
+    "included": [
+      "Website design and build (Grow package scope)",
+      "Service pages and content structure"
+    ],
+    "deliverables": [
+      "Responsive website (desktop and mobile)"
+    ],
+    "exclusions": [
+      "Ongoing changes after go-live (Web Care is separate and optional)"
+    ]
+  },
+  "timeline": {
+    "estimated_delivery": "6 weeks from approval",
+    "notes": "Estimated; final schedule confirmed at agreement"
+  },
+  "commercial_schedule": {
+    "currency": "GBP",
+    "reference_price": { "from": 4250 },
+    "approved_final_project_price": 5100,
+    "setup_fee": null,
+    "payment_schedule": [40, 30, 30],
+    "recurring_fees": null,
+    "care": null,
+    "warranty": {
+      "code": "W90",
+      "label": "90-day Web Launch Warranty",
+      "applies": true
+    },
+    "vat": {
+      "status": "UNDETERMINED",
+      "note": "VAT status is unresolved; no tax determination is made in this proposal."
+    }
+  },
+  "client_responsibilities": [
+    "Timely feedback on design review stages",
+    "Required copy and imagery before the build stage"
+  ],
+  "assumptions": [
+    "Approved Final Project Price is the contractual commercial basis, not the public From price"
+  ],
+  "next_steps": [
+    "Review and issue this proposal",
+    "Following acceptance, a commercial agreement is executed before invoicing"
+  ],
+  "acceptance": {
+    "method": "written",
+    "provider": null,
+    "status": "PENDING",
+    "accepted_by": null,
+    "accepted_at": null
+  }
+}

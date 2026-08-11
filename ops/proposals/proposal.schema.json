@@ -28,8 +28,8 @@
       "description": "Proposal version, e.g. 1.0, 1.1. An accepted proposal is immutable; revisions get a new version / proposal_id (see README)."
     },
     "status": {
-      "enum": ["DRAFT", "INTERNAL_APPROVED", "SENT", "CLIENT_ACCEPTED", "EXPIRED", "SUPERSEDED"],
-      "description": "Proposal lifecycle status. CLIENT_ACCEPTED freezes the commercial schedule."
+      "enum": ["DRAFT", "INTERNAL_APPROVED", "SENT", "CLIENT_ACCEPTED", "DECLINED", "EXPIRED", "SUPERSEDED"],
+      "description": "Proposal lifecycle status (canonical, governed by PROP.4). Forward-only transitions enforced by ops/proposals/proposal-lifecycle.mjs. DRAFT -> INTERNAL_APPROVED|SENT; INTERNAL_APPROVED -> SENT; SENT -> CLIENT_ACCEPTED|DECLINED|EXPIRED|SUPERSEDED. CLIENT_ACCEPTED freezes the commercial schedule and is immutable. Terminal statuses: CLIENT_ACCEPTED, DECLINED, EXPIRED, SUPERSEDED."
     },
     "issue_date": { "type": "string", "format": "date" },
     "valid_until": {
@@ -173,6 +173,26 @@
         "accepted_by": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
         "accepted_at": { "anyOf": [{ "type": "string", "format": "date" }, { "type": "null" }] }
       }
+    },
+    "supersedes": {
+      "type": "object",
+      "description": "Optional. Reference to the prior Proposal version this Proposal replaces (versioning / supersession, PROP.4). proposal_id + version of the superseded document. A superseding version must be a HIGHER version.",
+      "properties": {
+        "proposal_id": { "type": "string", "pattern": "^PRP-\\d{4}-\\d{4}$" },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
+        "reason": { "type": "string" }
+      },
+      "required": ["proposal_id", "version"]
+    },
+    "superseded_by": {
+      "type": "object",
+      "description": "Optional. Set by the lifecycle supersede command on the OLD Proposal (status SUPERSEDED): proposal_id + version of the new Proposal that replaces it. Accepted proposals are immutable and are never re-labelled; a post-acceptance revision is a NEW version carrying a supersedes reference instead.",
+      "properties": {
+        "proposal_id": { "type": "string", "pattern": "^PRP-\\d{4}-\\d{4}$" },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
+        "reason": { "type": "string" }
+      },
+      "required": ["proposal_id", "version"]
     },
     "_example": {
       "type": "boolean",

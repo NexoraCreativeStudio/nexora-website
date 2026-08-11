@@ -1,0 +1,87 @@
+{
+  "_example": true,
+  "_comment": "SYNTHETIC EXAMPLE ONLY. Not a real proposal, no real client. Exercises the PROP.4 ACCEPTED state (PRP-2026-9104): status CLIENT_ACCEPTED with the acceptance block recorded. The commercial snapshot is IMMUTABLE; the matching acceptance record (proposal-accepted.acceptance.json) stores its canonical SHA-256 fingerprint, and proposal-accepted.handoff.json shows the Agreement handoff derived from it.",
+  "proposal_id": "PRP-2026-9104",
+  "version": "1.0",
+  "status": "CLIENT_ACCEPTED",
+  "issue_date": "2026-07-15",
+  "valid_until": "2026-08-14",
+  "client": {
+    "name": "Example Aesthetics Ltd",
+    "company": "Example Aesthetics Ltd",
+    "contact": {
+      "name": "Alex Sample",
+      "email": "example.aesthetics@example.com",
+      "phone": "01234 000 000"
+    }
+  },
+  "project": {
+    "title": "Example Aesthetics — Grow website rebuild (accepted)",
+    "summary": "Accepted Grow-package website rebuild for the Example Aesthetics clinic.",
+    "objectives": [
+      "Modern, conversion-focused clinic website",
+      "Clear service and pricing structure",
+      "Online booking integration"
+    ]
+  },
+  "offering": {
+    "code": "B2",
+    "category": "WEB",
+    "name": "Grow"
+  },
+  "scope": {
+    "included": [
+      "Website design and build (Grow package scope)",
+      "Service pages and content structure",
+      "Booking integration"
+    ],
+    "deliverables": [
+      "Responsive website (desktop and mobile)",
+      "Go-live deployment"
+    ],
+    "exclusions": [
+      "Content copywriting beyond the agreed page set",
+      "Ongoing changes after go-live (Web Care is separate and optional)"
+    ]
+  },
+  "timeline": {
+    "estimated_delivery": "6 weeks from approval",
+    "notes": "Estimated; final schedule confirmed at agreement"
+  },
+  "commercial_schedule": {
+    "currency": "GBP",
+    "reference_price": { "from": 4250 },
+    "approved_final_project_price": 5100,
+    "setup_fee": null,
+    "payment_schedule": [40, 30, 30],
+    "recurring_fees": null,
+    "care": null,
+    "warranty": {
+      "code": "W90",
+      "label": "90-day Web Launch Warranty",
+      "applies": true
+    },
+    "vat": {
+      "status": "UNDETERMINED",
+      "note": "VAT status is unresolved; no tax determination is made in this proposal."
+    }
+  },
+  "client_responsibilities": [
+    "Timely feedback on content and design review stages",
+    "Required copy and imagery before the build stage"
+  ],
+  "assumptions": [
+    "Approved Final Project Price is the contractual commercial basis, not the public From price",
+    "The commercial snapshot is frozen on acceptance"
+  ],
+  "next_steps": [
+    "A commercial agreement is executed before invoicing (Agreement handoff available)"
+  ],
+  "acceptance": {
+    "method": "written",
+    "provider": null,
+    "status": "ACCEPTED",
+    "accepted_by": "Alex Sample",
+    "accepted_at": "2026-08-01"
+  }
+}
