@@ -1,10 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/assets/js/consent-mode.js"></script>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-LWT57YG0B1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-LWT57YG0B1');
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The AI Growth Platform for Aesthetic Clinics | Nexora Creative Studio</title>
-<meta name="description" content="One platform, three modules — AI Receptionist, Lead Reactivation and a live Growth Dashboard, built exclusively for UK aesthetic clinics.">
+<meta name="description" content="Nexora Platform — one connected AI Growth Platform for UK aesthetic clinics, with AI Receptionist, Lead Reactivation, AI CRM, Analytics, Automations, Patient Journey and Knowledge Base.">
 <link rel="canonical" href="https://nexorastudio.uk/platform/">
 
 <!-- Favicon -->
@@ -40,6 +50,7 @@
 <link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/site.css">
 <link rel="stylesheet" href="/assets/css/design-system.css">
+<link rel="stylesheet" href="/assets/css/consent.css">
 </head>
 <body>
 
@@ -112,10 +123,116 @@
   <section class="platform-hero internal-hero reveal">
     <div class="eyebrow" style="justify-content:center;">The Nexora Platform</div>
     <h1 style="font-size:clamp(32px,4.2vw,48px);text-align:center;line-height:1.12;margin-bottom:20px;">One connected AI Growth Platform.</h1>
-    <p style="text-align:center;color:var(--text-muted);font-size:17px;line-height:1.65;">Nexora isn't a bundle of separate tools you buy one at a time — it's one system, where every module reads from and strengthens the others. AI Receptionist and Lead Reactivation are live today. Here's how the full platform fits together.</p>
+    <p style="text-align:center;color:var(--text-muted);font-size:17px;line-height:1.65;">Nexora isn't a bundle of separate tools you buy one at a time — it's one system, where every module reads from and strengthens the others. All 7 modules are live and connected today. Here's how the full platform fits together.</p>
     <div class="btn-row" style="justify-content:center;margin-top:32px;">
       <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="btn-primary">Book Your Free Demo →</a>
       <button type="button" class="btn-vapi vapi-trigger" data-vapi-label="🎙 Talk to Our Live AI" data-vapi-label-active="🔴 End Call">🎙 Talk to Our Live AI</button>
+    </div>
+  </section>
+
+  <!-- INTERACTIVE PLATFORM DEMO -->
+  <section class="ds-section reveal">
+    <div class="section-head reveal">
+      <div class="eyebrow">See it work</div>
+      <h2>One patient. One connected system.</h2>
+      <p>Click through what happens when a single enquiry moves through the platform — the same record, passed from module to module.</p>
+    </div>
+
+    <div class="ds-dashboard-frame">
+      <div class="ds-dashboard-topbar">
+        <span class="title" id="demo-step-title">1. Patient Enquiry</span>
+        <span class="badge badge-gold">Illustrative Example</span>
+      </div>
+
+      <div class="ds-filter-bar" role="tablist" aria-label="Platform workflow steps" id="platform-demo-tabs">
+        <button type="button" class="ds-filter-chip demo-tab is-active" role="tab" aria-selected="true" aria-controls="demo-panel-1" id="demo-tab-1" data-step="1">1 · Enquiry</button>
+        <button type="button" class="ds-filter-chip demo-tab" role="tab" aria-selected="false" aria-controls="demo-panel-2" id="demo-tab-2" data-step="2" tabindex="-1">2 · AI Receptionist</button>
+        <button type="button" class="ds-filter-chip demo-tab" role="tab" aria-selected="false" aria-controls="demo-panel-3" id="demo-tab-3" data-step="3" tabindex="-1">3 · Knowledge Base</button>
+        <button type="button" class="ds-filter-chip demo-tab" role="tab" aria-selected="false" aria-controls="demo-panel-4" id="demo-tab-4" data-step="4" tabindex="-1">4 · AI CRM</button>
+        <button type="button" class="ds-filter-chip demo-tab" role="tab" aria-selected="false" aria-controls="demo-panel-5" id="demo-tab-5" data-step="5" tabindex="-1">5 · Automations</button>
+        <button type="button" class="ds-filter-chip demo-tab" role="tab" aria-selected="false" aria-controls="demo-panel-6" id="demo-tab-6" data-step="6" tabindex="-1">6 · Patient Journey</button>
+        <button type="button" class="ds-filter-chip demo-tab" role="tab" aria-selected="false" aria-controls="demo-panel-7" id="demo-tab-7" data-step="7" tabindex="-1">7 · Analytics</button>
+      </div>
+
+      <!-- STEP 1 -->
+      <div class="demo-panel" id="demo-panel-1" role="tabpanel" aria-labelledby="demo-tab-1">
+        <div class="ds-widget-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);">
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">What happened</div><p style="font-size:13px;color:var(--text);margin-top:6px;">A prospective patient messages via WhatsApp asking about lip filler pricing.</p></div>
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">What Nexora did</div><p style="font-size:13px;color:var(--text);margin-top:6px;">The enquiry is captured instantly, whatever the hour.</p></div>
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">Business value</div><p style="font-size:13px;color:var(--text);margin-top:6px;">No enquiry goes unanswered, even outside office hours.</p></div>
+        </div>
+        <p class="ds-sample-label" style="text-align:left;margin-top:16px;">Passes to next step: enquiry details (channel, question, contact info)</p>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="demo-panel" id="demo-panel-2" role="tabpanel" aria-labelledby="demo-tab-2" hidden>
+        <div class="ds-widget-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);">
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">What happened</div><p style="font-size:13px;color:var(--text);margin-top:6px;">The pricing question needs an accurate, on-brand answer.</p></div>
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">What Nexora did</div><p style="font-size:13px;color:var(--text);margin-top:6px;">AI Receptionist qualifies the patient and prepares to answer.</p></div>
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">Business value</div><p style="font-size:13px;color:var(--text);margin-top:6px;">A consistent, professional first response — 24/7.</p></div>
+        </div>
+        <p class="ds-sample-label" style="text-align:left;margin-top:16px;">Passes to next step: the qualified question, ready for an approved answer</p>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="demo-panel" id="demo-panel-3" role="tabpanel" aria-labelledby="demo-tab-3" hidden>
+        <div class="ds-widget-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);">
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">What happened</div><p style="font-size:13px;color:var(--text);margin-top:6px;">The question needs a correct, approved answer — not a guess.</p></div>
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">What Nexora did</div><p style="font-size:13px;color:var(--text);margin-top:6px;">Knowledge Base supplies the exact human-reviewed answer.</p></div>
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">Business value</div><p style="font-size:13px;color:var(--text);margin-top:6px;">Every channel gives the same accurate answer, every time.</p></div>
+        </div>
+        <p class="ds-sample-label" style="text-align:left;margin-top:16px;">Passes to next step: the approved answer, plus the interaction record</p>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="demo-panel" id="demo-panel-4" role="tabpanel" aria-labelledby="demo-tab-4" hidden>
+        <div class="ds-widget-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);">
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">What happened</div><p style="font-size:13px;color:var(--text);margin-top:6px;">The conversation and patient details need a shared home.</p></div>
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">What Nexora did</div><p style="font-size:13px;color:var(--text);margin-top:6px;">AI CRM records the interaction as one shared patient record.</p></div>
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">Business value</div><p style="font-size:13px;color:var(--text);margin-top:6px;">Nothing is lost between systems, channels, or staff.</p></div>
+        </div>
+        <p class="ds-sample-label" style="text-align:left;margin-top:16px;">Passes to next step: the updated patient record</p>
+      </div>
+
+      <!-- STEP 5 -->
+      <div class="demo-panel" id="demo-panel-5" role="tabpanel" aria-labelledby="demo-tab-5" hidden>
+        <div class="ds-widget-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);">
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">What happened</div><p style="font-size:13px;color:var(--text);margin-top:6px;">The patient hasn't booked a consultation yet.</p></div>
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">What Nexora did</div><p style="font-size:13px;color:var(--text);margin-top:6px;">Automations schedules a timely, appropriate follow-up.</p></div>
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">Business value</div><p style="font-size:13px;color:var(--text);margin-top:6px;">Leads aren't lost simply because the clinic had a busy day.</p></div>
+        </div>
+        <p class="ds-sample-label" style="text-align:left;margin-top:16px;">Passes to next step: a scheduled follow-up action</p>
+      </div>
+
+      <!-- STEP 6 -->
+      <div class="demo-panel" id="demo-panel-6" role="tabpanel" aria-labelledby="demo-tab-6" hidden>
+        <div class="ds-widget-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);">
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">What happened</div><p style="font-size:13px;color:var(--text);margin-top:6px;">This patient's full history needs to stay in view.</p></div>
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">What Nexora did</div><p style="font-size:13px;color:var(--text);margin-top:6px;">Patient Journey adds this interaction to their complete timeline.</p></div>
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">Business value</div><p style="font-size:13px;color:var(--text);margin-top:6px;">Staff always see the full picture, never a fragment.</p></div>
+        </div>
+        <p class="ds-sample-label" style="text-align:left;margin-top:16px;">Passes to next step: an updated journey, ready for reporting</p>
+      </div>
+
+      <!-- STEP 7 -->
+      <div class="demo-panel" id="demo-panel-7" role="tabpanel" aria-labelledby="demo-tab-7" hidden>
+        <div class="ds-widget-grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);">
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">What happened</div><p style="font-size:13px;color:var(--text);margin-top:6px;">Leadership wants to know what's actually working.</p></div>
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">What Nexora did</div><p style="font-size:13px;color:var(--text);margin-top:6px;">Analytics rolls this interaction into clinic-wide reporting.</p></div>
+          <div class="ds-widget"><div class="metric-label" style="margin-top:0;">Business value</div><p style="font-size:13px;color:var(--text);margin-top:6px;">Decisions based on real patterns, not guesswork.</p></div>
+        </div>
+        <p class="ds-sample-label" style="text-align:left;margin-top:16px;">The loop closes here — every module worked from the same record.</p>
+      </div>
+
+      <p style="text-align:center;color:var(--text-muted);font-size:14px;margin-top:24px;">See how this looks for your own clinic.</p>
+      <div class="btn-row" style="justify-content:center;margin-top:12px;">
+        <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="btn-primary">Book Your Free Demo →</a>
+      </div>
+      <div class="trust-row" style="justify-content:center;margin-top:32px;">
+        <div><b>Nexora Creative Studio Ltd · London, UK</b></div>
+        <div><b>One connected platform — never a separate line item</b></div>
+        <div><b>AI assists operational workflows — never clinical decisions</b></div>
+      </div>
     </div>
   </section>
 
@@ -227,7 +344,7 @@
       <div class="platform-card active">
         <div class="platform-card-eyebrow">Live now · Platform module</div>
         <h3>Lead Reactivation</h3>
-        <p>Every clinic has old, unconverted enquiries sitting cold in an inbox. Lead Reactivation re-engages them automatically, turning yesterday's missed opportunities into tomorrow's booked consultations. Included as part of the Growth and Elite plans.</p>
+        <p>Every clinic has old, unconverted enquiries sitting cold in an inbox. Lead Reactivation re-engages them automatically, turning yesterday's missed opportunities into tomorrow's booked consultations. Included as part of the AI Growth and AI Scale plans.</p>
         <a href="/platform/lead-reactivation/" class="btn-primary">Explore Lead Reactivation →</a>
       </div>
 
@@ -373,6 +490,8 @@
 <script src="/assets/js/calendly-init.js"></script>
 <script src="/assets/js/reveal.js"></script>
 <script src="/assets/js/nav.js"></script>
+<script src="/assets/js/platform-demo.js"></script>
 
+  <script src="/assets/js/cta-tracking.js"></script>
 </body>
 </html>

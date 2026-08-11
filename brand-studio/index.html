@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/assets/js/consent-mode.js"></script>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-LWT57YG0B1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-LWT57YG0B1');
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brand Studio | Nexora Creative Studio</title>
@@ -39,6 +49,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/consent.css">
 </head>
 <body>
 
@@ -70,6 +81,7 @@
         </div>
       </div>
       <a href="/luxury-clinic-websites/">Luxury Clinic Websites</a>
+      <a href="/brand-studio/">Brand Studio</a>
       <a href="/#pricing">Pricing</a>
       <a href="/results/">Results</a>
       <a href="/#faq">FAQ</a>
@@ -95,6 +107,7 @@
   <a href="/platform/patient-journey/">Patient Journey</a>
   <a href="/platform/knowledge-base/">Knowledge Base</a>
   <a href="/luxury-clinic-websites/">Luxury Clinic Websites</a>
+  <a href="/brand-studio/">Brand Studio</a>
   <a href="/#pricing">Pricing</a>
   <a href="/results/">Results</a>
   <a href="/#faq">FAQ</a>
@@ -185,11 +198,85 @@
 
   <!-- PRICING -->
   <section style="padding:0 0 90px;">
-    <div class="quote-pricing-band reveal">
-      <h3>Project-based, quote after consultation.</h3>
-      <p>Brand identity work is scoped to your clinic in a short consultation call, with a clear, upfront quote — separate from the monthly Growth Platform pricing.</p>
-      <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="btn-primary">Book a Brand Consultation →</a>
+    <div class="section-head reveal">
+      <div class="eyebrow">Brand packages</div>
+      <h2>Three ways to build your identity.</h2>
+      <p>Every project is scoped to your clinic after a consultation — these are starting prices, not fixed packages.</p>
     </div>
+    <div class="pricing-grid reveal">
+      <div class="price-card">
+        <div class="price-name">Brand Foundation</div>
+        <div class="price-amount">£2,250<span> one-time</span></div>
+        <ul>
+          <li>Brand strategy &amp; clinic positioning</li>
+          <li>Logo &amp; identity system</li>
+          <li>Colour &amp; typography</li>
+          <li>Brand guidelines</li>
+        </ul>
+        <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="price-btn">Book a consultation</a>
+      </div>
+      <div class="price-card featured">
+        <div class="price-tag">Most popular</div>
+        <div class="price-name">Brand System</div>
+        <div class="price-amount">From £5,250<span> one-time</span></div>
+        <ul>
+          <li>Everything in Brand Foundation</li>
+          <li>Social media templates</li>
+          <li>Treatment menus</li>
+          <li>Print collateral</li>
+        </ul>
+        <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="price-btn">Book a consultation</a>
+      </div>
+      <div class="price-card">
+        <div class="price-name">Signature Brand</div>
+        <div class="price-amount">From £8,500<span> bespoke · one-time</span></div>
+        <ul>
+          <li>Everything in Brand System</li>
+          <li>Launch assets &amp; signage concepts</li>
+          <li>Deeper identity &amp; campaign work</li>
+          <li>Scoped to your clinic</li>
+        </ul>
+        <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="price-btn">Book a consultation</a>
+      </div>
+    </div>
+    <p class="case-disclaimer">Prices shown are starting points for guidance — your exact scope and quote are confirmed after a consultation and set out in a written proposal. Brand identity work is separate from AI platform pricing and does not include website development.</p>
+  </section>
+
+  <!-- BRAND & CREATIVE CARE (OPTIONAL AFTERCARE) -->
+  <section style="padding:0 0 90px;">
+    <div class="section-head reveal">
+      <div class="eyebrow">Optional aftercare</div>
+      <h2>Keep your brand consistent, after launch.</h2>
+      <p>Brand &amp; Creative Care is an optional monthly plan offering bounded monthly creative capacity — ongoing brand governance, on-brand creative, and design support. It's never included in the project price.</p>
+    </div>
+    <div class="pricing-grid reveal">
+      <div class="price-card">
+        <div class="price-name">Brand &amp; Creative Care Standard</div>
+        <div class="price-amount">From £599<span>/month</span></div>
+        <div class="price-setup">3 hours monthly creative capacity</div>
+        <ul>
+          <li>One active request at a time</li>
+          <li>Brand governance &amp; identity application</li>
+          <li>Campaign &amp; social creative assets</li>
+          <li>Monthly, paid in advance</li>
+        </ul>
+        <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="price-btn">Ask about Brand Care</a>
+      </div>
+      <div class="price-card featured">
+        <div class="price-tag">Most popular</div>
+        <div class="price-name">Brand &amp; Creative Care Extended</div>
+        <div class="price-amount">£949<span>/month</span></div>
+        <div class="price-setup">5 hours monthly creative capacity</div>
+        <ul>
+          <li>Everything in Standard</li>
+          <li>More monthly creative capacity</li>
+          <li>Design support &amp; creative consultation</li>
+          <li>Monthly, paid in advance</li>
+        </ul>
+        <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="price-btn">Ask about Brand Care</a>
+      </div>
+    </div>
+    <p class="case-disclaimer">Brand &amp; Creative Care is optional and billed separately. Capacity is per calendar month with no indefinite rollover, and a single active request at a time. It does not include full rebrands, new brand strategy, website development, social media management, or unlimited design work.</p>
   </section>
 
 </main>
@@ -278,5 +365,6 @@
 <script src="/assets/js/reveal.js"></script>
 <script src="/assets/js/nav.js"></script>
 
+  <script src="/assets/js/cta-tracking.js"></script>
 </body>
 </html>

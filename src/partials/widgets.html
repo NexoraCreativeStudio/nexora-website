@@ -1,0 +1,61 @@
+
+<script src="/assets/js/reveal.js"></script>
+<script>
+  // ROI Calculator (homepage-only — elements don't exist on other Phase 1 pages)
+  function syncPair(numId, rangeId){
+    const num = document.getElementById(numId);
+    const range = document.getElementById(rangeId);
+    if(!num || !range) return;
+    num.addEventListener('input', ()=>{ range.value = num.value; calcROI(); });
+    range.addEventListener('input', ()=>{ num.value = range.value; calcROI(); });
+  }
+  function calcROI(){
+    const value = parseFloat(document.getElementById('roi-value').value) || 0;
+    const missed = parseFloat(document.getElementById('roi-missed').value) || 0;
+    const conv = parseFloat(document.getElementById('roi-conv').value) || 0;
+    const bookingsPerWeek = missed * (conv/100);
+    const bookingsPerMonth = bookingsPerWeek * 4.33;
+    const monthlyRevenue = bookingsPerMonth * value;
+    const yearlyRevenue = monthlyRevenue * 12;
+    document.getElementById('roi-monthly').textContent = Math.round(monthlyRevenue).toLocaleString();
+    document.getElementById('roi-yearly').textContent = Math.round(yearlyRevenue).toLocaleString();
+    document.getElementById('roi-bookings').textContent = Math.round(bookingsPerMonth);
+  }
+  syncPair('roi-value','roi-value-range');
+  syncPair('roi-missed','roi-missed-range');
+  syncPair('roi-conv','roi-conv-range');
+  calcROI();
+</script>
+<script src="/assets/js/nav.js"></script>
+
+<a href="https://wa.me/447440444478?text=Hello%2C%20I%20would%20like%20to%20know%20more%20about%20your%20services" target="_blank" rel="noopener" class="whatsapp-float">
+  💬 <span class="wa-label">{{wa_float.label}}</span>
+</a>
+
+<!-- VAPI LIVE CALL WIDGET -->
+<div class="vapi-widget" id="vapiWidget" role="dialog" aria-label="{{a11y.live_ai_call}}">
+  <div class="vapi-widget-header">
+    <span class="vapi-widget-dot"></span>
+    <span>{{vapi.live_call}}</span>
+    <button type="button" class="vapi-widget-close" id="vapiCloseBtn" aria-label="{{a11y.close_call_widget}}">&times;</button>
+  </div>
+  <div class="vapi-orb-row">
+    <div class="vapi-orb ai-orb" id="vapiAiOrb"><span>{{vapi.orb_ai}}</span></div>
+    <div class="vapi-orb user-orb" id="vapiUserOrb"><span>{{vapi.orb_you}}</span></div>
+  </div>
+  <div class="vapi-status" id="vapiStatus">{{vapi.status_connecting}}</div>
+  <div class="vapi-timer" id="vapiTimer">00:00</div>
+  <button type="button" class="vapi-end-btn" id="vapiEndBtn">{{vapi.end_call}}</button>
+</div>
+
+<script type="module" src="/assets/js/vapi-widget.js"></script>
+
+<script
+  src="https://assets.calendly.com/assets/external/widget.js"
+  type="text/javascript"
+  async>
+</script>
+
+<script src="/assets/js/calendly-init.js"></script>
+
+  <script src="/assets/js/cta-tracking.js"></script>

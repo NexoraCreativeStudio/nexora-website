@@ -1,0 +1,560 @@
+
+<main class="wrap">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div>
+      <div class="eyebrow">{{hero.eyebrow}}</div>
+      <h1>{{hero.title}}</h1>
+      <p class="lead">{{hero.lead}}</p>
+      <div class="btn-row">
+        <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="btn-primary">{{hero.cta_demo}}</a>
+        <button type="button" class="btn-vapi vapi-trigger" data-vapi-label="{{nav.talk_live}}" data-vapi-label-active="{{nav.end_call}}">{{nav.talk_live}}</button>
+        <a href="#how" class="btn-ghost">{{hero.cta_see_how}}</a>
+      </div>
+      <div class="hero-checks">
+        <span>{{hero.check_strategy_call}}</span>
+        <span>{{hero.check_google_meet}}</span>
+        <span>{{hero.check_no_obligation}}</span>
+      </div>
+      <div class="trust-row">
+        <div><b>50+</b>{{hero.stat_clinics_served}}</div>
+        <div><b>24/7</b>{{hero.stat_always_answering}}</div>
+        <div><b>150+</b>{{hero.stat_consultations_booked}}</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-head"><span class="phone-dot"></span><span>{{hero.phone_title}}</span></div>
+      <div class="bubble in">{{hero.phone_bubble_1}}</div>
+      <div class="bubble out">{{hero.phone_bubble_2}}</div>
+      <div class="bubble in">{{hero.phone_bubble_3}}</div>
+      <div class="booked-card">
+        <div class="check">✓</div>
+        <div><b>{{hero.phone_booked}}</b><p>{{hero.phone_booked_detail}}</p></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- DEMO PHONE BANNER -->
+<div class="phone-banner">
+  <div class="wrap phone-banner-inner">
+    <div class="phone-banner-text">
+      <span class="pulse-dot"></span>
+      {{phone_banner.text}}
+    </div>
+    <a href="tel:+447440444478" class="phone-banner-btn">📞 +44 7440 444478</a>
+  </div>
+</div>
+
+<!-- SOCIAL PROOF -->
+<section class="proof" id="proof">
+  <div class="wrap">
+    <div class="proof-logos-label reveal">{{proof.label}}</div>
+    <div class="proof-logo-row reveal">
+      <div class="proof-logo">AURA AESTHETICS — LONDON</div>
+      <div class="proof-logo-next">{{proof.logo_next}}</div>
+    </div>
+    <div class="proof-metrics reveal">
+      <div class="proof-metric">
+        <div class="proof-metric-num">327</div>
+        <div class="proof-metric-label">{{proof.metric_enquiries}}</div>
+      </div>
+      <div class="proof-metric">
+        <div class="proof-metric-num">84</div>
+        <div class="proof-metric-label">{{hero.stat_consultations_booked}}</div>
+      </div>
+      <div class="proof-metric">
+        <div class="proof-metric-num">£31,000</div>
+        <div class="proof-metric-label">{{proof.metric_revenue}}</div>
+      </div>
+    </div>
+    <div class="proof-testimonial reveal">
+      <p>{{proof.testimonial}}</p>
+      <div class="proof-testimonial-author"><b>{{proof.testimonial_author}}</b> {{proof.testimonial_clinic}}</div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="problem" id="problem">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">{{problem.eyebrow}}</div>
+      <h2>{{problem.title}}</h2>
+      <p>{{problem.intro}}</p>
+    </div>
+    <div class="problem-grid reveal">
+      <div class="problem-col before">
+        <h3>{{problem.before_title}}</h3>
+        <ul>
+          <li>{{problem.before_1}}</li>
+          <li>{{problem.before_2}}</li>
+          <li>{{problem.before_3}}</li>
+          <li>{{problem.before_4}}</li>
+        </ul>
+      </div>
+      <div class="problem-col after">
+        <h3>{{problem.after_title}}</h3>
+        <ul>
+          <li>{{problem.after_1}}</li>
+          <li>{{problem.after_2}}</li>
+          <li>{{problem.after_3}}</li>
+          <li>{{problem.after_4}}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">{{how.eyebrow}}</div>
+      <h2>{{how.title}}</h2>
+    </div>
+    <div class="how-grid reveal">
+      <div class="how-step">
+        <div class="how-num">{{how.step1_num}}</div>
+        <h3>{{how.step1_title}}</h3>
+        <p>{{how.step1_text}}</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">{{how.step2_num}}</div>
+        <h3>{{how.step2_title}}</h3>
+        <p>{{how.step2_text}}</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">{{how.step3_num}}</div>
+        <h3>{{how.step3_title}}</h3>
+        <p>{{how.step3_text}}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">{{services.eyebrow}}</div>
+      <h2>{{services.title}}</h2>
+      <p>{{services.intro}} <a href="/platform/" style="color:var(--gold-light);border-bottom:1px solid rgba(232,205,122,0.35);">{{services.explore_platform}}</a></p>
+    </div>
+    <div class="services-grid reveal">
+      <div class="service-card">
+        <div class="service-icon">☎</div>
+        <h3>{{nav.ai_receptionist}}</h3>
+        <p>{{services.card1_text}}</p>
+        <a href="/platform/ai-receptionist/" style="display:inline-block;margin-top:12px;font-size:13px;color:var(--gold-light);border-bottom:1px solid rgba(232,205,122,0.35);">{{services.learn_more}}</a>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">💬</div>
+        <h3>{{services.card2_title}}</h3>
+<p>{{services.card2_text}}</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">✦</div>
+        <h3>{{services.card3_title}}</h3>
+<p>{{services.card3_text}}</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">↻</div>
+        <h3>{{services.card4_title}}</h3>
+<p>{{services.card4_text}}</p>
+        <a href="/platform/lead-reactivation/" style="display:inline-block;margin-top:12px;font-size:13px;color:var(--gold-light);border-bottom:1px solid rgba(232,205,122,0.35);">{{services.learn_more}}</a>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">⌂</div>
+       <h3>{{services.card5_title}}</h3>
+        <p>{{services.card5_text}}</p>
+        <a href="/luxury-clinic-websites/" style="display:inline-block;margin-top:12px;font-size:13px;color:var(--gold-light);border-bottom:1px solid rgba(232,205,122,0.35);">{{services.learn_more}}</a>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">◔</div>
+        <h3>{{services.card6_title}}</h3>
+        <p>{{services.card6_text}}</p>
+      </div>
+    </div>
+
+    <div class="live-demo-card reveal">
+      <div class="live-demo-text">
+        <span class="live-demo-pulse"></span>
+        <div>
+          <h3>{{services.live_demo_title}}</h3>
+          <p>{{services.live_demo_text}}</p>
+        </div>
+      </div>
+      <div class="btn-row" style="gap:12px;">
+        <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="btn-primary">{{services.live_demo_cta}}</a>
+        <button type="button" class="btn-vapi vapi-trigger" data-vapi-label="{{nav.talk_live}}" data-vapi-label-active="{{nav.end_call}}">{{nav.talk_live}}</button>
+      </div>
+    </div>
+    <p class="live-demo-note">
+      {{services.live_demo_note}}<br>
+      <strong>{{services.live_demo_warning}}</strong> {{services.live_demo_privacy}}
+    </p>
+  </div>
+</section>
+
+<!-- GALLERY -->
+<section id="gallery">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">{{gallery.eyebrow}}</div>
+      <h2>{{gallery.title}}</h2>
+      <p>{{gallery.intro}}</p>
+    </div>
+    <div class="gallery-grid">
+      <div class="gallery-item reveal h-tall">
+        <img src="https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&w=1000&q=80" alt="{{gallery.alt_1}}" loading="lazy" decoding="async">
+      </div>
+      <div class="gallery-item reveal h-medium">
+        <img src="https://images.unsplash.com/photo-1552693673-1bf958298935?auto=format&fit=crop&w=700&q=80" alt="{{gallery.alt_2}}" loading="lazy" decoding="async">
+      </div>
+      <div class="gallery-item reveal h-short">
+        <img src="https://images.unsplash.com/photo-1581182815808-b6eb627a8798?auto=format&fit=crop&w=700&q=80" alt="{{gallery.alt_3}}" loading="lazy" decoding="async">
+      </div>
+      <div class="gallery-item reveal h-medium">
+        <img src="https://images.unsplash.com/photo-1758448500688-3ababa93fd67?auto=format&fit=crop&w=900&q=80" alt="{{gallery.alt_4}}" loading="lazy" decoding="async">
+      </div>
+      <div class="gallery-item reveal h-tall">
+        <img src="https://images.unsplash.com/photo-1758448721162-0c77cf477d6f?auto=format&fit=crop&w=900&q=80" alt="{{gallery.alt_5}}" loading="lazy" decoding="async">
+      </div>
+      <div class="gallery-item reveal h-short">
+        <img src="https://images.unsplash.com/photo-1758448093806-88b2089068ab?auto=format&fit=crop&w=900&q=80" alt="{{gallery.alt_6}}" loading="lazy" decoding="async">
+      </div>
+      <div class="gallery-item reveal h-medium">
+        <img src="https://images.unsplash.com/photo-1758691462863-9e1b8a863140?auto=format&fit=crop&w=900&q=80" alt="{{gallery.alt_7}}" loading="lazy" decoding="async">
+      </div>
+      <div class="gallery-item reveal h-tall">
+        <img src="https://images.unsplash.com/photo-1758691461990-03b49d969495?auto=format&fit=crop&w=900&q=80" alt="{{gallery.alt_8}}" loading="lazy" decoding="async">
+      </div>
+      <div class="gallery-item reveal h-short">
+        <img src="https://images.unsplash.com/photo-1723513198534-c3cd2e033815?auto=format&fit=crop&w=900&q=80" alt="{{gallery.alt_9}}" loading="lazy" decoding="async">
+      </div>
+      <div class="gallery-item reveal h-medium">
+        <img src="https://images.unsplash.com/photo-1758691462954-e6fa5005474b?auto=format&fit=crop&w=900&q=80" alt="{{gallery.alt_10}}" loading="lazy" decoding="async">
+      </div>
+      <div class="gallery-item reveal h-tall">
+        <img src="https://images.unsplash.com/photo-1758448721149-aa0ce8e1b2c9?auto=format&fit=crop&w=900&q=80" alt="{{gallery.alt_11}}" loading="lazy" decoding="async">
+      </div>
+      <div class="gallery-item reveal h-medium">
+        <img src="https://images.unsplash.com/photo-1750311344194-7096a00b9bcf?auto=format&fit=crop&w=900&q=80" alt="{{gallery.alt_12}}" loading="lazy" decoding="async">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROI CALCULATOR -->
+<section id="roi">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">{{roi.eyebrow}}</div>
+      <h2>{{roi.title}}</h2>
+      <p>{{roi.intro}}</p>
+    </div>
+    <div class="roi-box reveal">
+      <div class="roi-inputs">
+        <div class="roi-field">
+          <label for="roi-value">{{roi.label_value}}</label>
+          <div class="roi-input-row">
+            <span>£</span>
+            <input type="number" id="roi-value" value="350" min="0" step="10">
+          </div>
+          <input type="range" id="roi-value-range" min="50" max="1500" step="10" value="350">
+        </div>
+        <div class="roi-field">
+          <label for="roi-missed">{{roi.label_missed}}</label>
+          <div class="roi-input-row">
+            <span>#</span>
+            <input type="number" id="roi-missed" value="8" min="0" step="1">
+          </div>
+          <input type="range" id="roi-missed-range" min="0" max="60" step="1" value="8">
+        </div>
+        <div class="roi-field">
+          <label for="roi-conv">{{roi.label_conv}}</label>
+          <div class="roi-input-row">
+            <span>%</span>
+            <input type="number" id="roi-conv" value="35" min="0" max="100" step="1">
+          </div>
+          <input type="range" id="roi-conv-range" min="0" max="100" step="1" value="35">
+        </div>
+      </div>
+      <div class="roi-result">
+        <div class="roi-result-label">{{roi.result_label}}</div>
+        <div class="roi-result-num"><span>£</span><span id="roi-monthly">4,900</span><span class="roi-per">{{units.per_month}}</span></div>
+        <div class="roi-result-sub">£<span id="roi-yearly">58,800</span> {{roi.per_year}} <span id="roi-bookings">10</span> {{roi.extra_bookings}}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats">
+  <div class="wrap">
+    <div class="stats-grid reveal">
+      <div><div class="stat-num">50+</div><div class="stat-label">{{hero.stat_clinics_served}}</div></div>
+      <div><div class="stat-num" style="color:var(--silver-light);">150+</div><div class="stat-label">{{hero.stat_consultations_booked}}</div></div>
+      <div><div class="stat-num">24/7</div><div class="stat-label">{{hero.stat_always_answering}}</div></div>
+      <div><div class="stat-num" style="color:var(--silver-light);">100%</div><div class="stat-label">{{stats.calls_covered}}</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CASE STUDY -->
+<section id="case-study">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">{{case.eyebrow}}</div>
+      <h2>{{case.title}}</h2>
+    </div>
+    <div class="case-card reveal">
+      <div class="case-quote-side">
+        <div class="case-tag">{{case.tag}}</div>
+        <p class="case-quote">{{proof.testimonial}}</p>
+        <div class="case-author">{{case.author}}</div>
+      </div>
+      <div class="case-stats-side">
+        <div class="case-stat"><div class="case-stat-num">37</div><div class="case-stat-label">{{case.stat_1}}</div></div>
+        <div class="case-stat"><div class="case-stat-num">14</div><div class="case-stat-label">{{case.stat_2}}</div></div>
+        <div class="case-stat"><div class="case-stat-num">100%</div><div class="case-stat-label">{{case.stat_3}}</div></div>
+      </div>
+    </div>
+    <p class="case-disclaimer">{{case.disclaimer}} <a href="/results/" style="color:var(--gold-light);">{{case.see_all_results}}</a></p>
+  </div>
+</section>
+
+<!-- PREMIUM LONDON CLINICS -->
+<section id="premium-clinics">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">{{premium.eyebrow}}</div>
+      <h2>{{premium.title}}</h2>
+      <p>{{premium.intro}}</p>
+    </div>
+
+    <div class="premium-hero reveal">
+      <img
+        src="https://images.unsplash.com/photo-1758691461957-474a7686e388?auto=format&fit=crop&w=1600&q=80"
+        alt="{{premium.alt_hero}}"
+        loading="lazy"
+        decoding="async">
+    </div>
+
+    <div class="premium-grid">
+      <div class="premium-grid-item reveal">
+        <img
+          src="https://images.unsplash.com/photo-1758193783649-13371d7fb8dd?auto=format&fit=crop&w=900&q=80"
+          alt="{{premium.alt_1}}"
+          loading="lazy"
+          decoding="async">
+      </div>
+      <div class="premium-grid-item reveal">
+        <img
+          src="https://images.unsplash.com/photo-1746173097293-efe52a0c02e8?auto=format&fit=crop&w=900&q=80"
+          alt="{{premium.alt_2}}"
+          loading="lazy"
+          decoding="async">
+      </div>
+      <div class="premium-grid-item reveal">
+        <img
+          src="https://images.unsplash.com/photo-1704455306251-b4634215d98f?auto=format&fit=crop&w=900&q=80"
+          alt="{{premium.alt_3}}"
+          loading="lazy"
+          decoding="async">
+      </div>
+      <div class="premium-grid-item reveal">
+        <img
+          src="https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&w=900&q=80"
+          alt="{{premium.alt_4}}"
+          loading="lazy"
+          decoding="async">
+      </div>
+    </div>
+
+    <p class="premium-copy reveal">{{premium.copy}}</p>
+
+    <div class="premium-features reveal">
+      <div class="premium-feature-card">
+        <h3>{{premium.feat1_title}}</h3>
+        <p>{{premium.feat1_text}}</p>
+      </div>
+      <div class="premium-feature-card">
+        <h3>{{premium.feat2_title}}</h3>
+        <p>{{premium.feat2_text}}</p>
+      </div>
+      <div class="premium-feature-card">
+        <h3>{{premium.feat3_title}}</h3>
+        <p>{{premium.feat3_text}}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">{{nav.pricing}}</div>
+      <h2>{{pricing.title}}</h2>
+      <p>{{pricing.intro}}</p>
+    </div>
+    <div class="pricing-grid reveal">
+      <div class="price-card">
+        <div class="price-name">{{pricing.starter_name}}</div>
+        <div class="price-amount">£297<span>{{units.per_month}}</span></div>
+        <div class="price-setup">{{pricing.starter_setup}}</div>
+        <ul>
+          <li>{{pricing.starter_1}}</li>
+          <li>{{pricing.starter_2}}</li>
+          <li>{{pricing.starter_3}}</li>
+          <li>{{pricing.starter_4}}</li>
+        </ul>
+        <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="price-btn">{{pricing.get_started}}</a>
+      </div>
+      <div class="price-card featured">
+        <div class="price-tag">{{pricing.most_popular}}</div>
+        <div class="price-name">{{pricing.growth_name}}</div>
+        <div class="price-amount">£697<span>{{units.per_month}}</span></div>
+        <div class="price-setup">{{pricing.growth_setup}}</div>
+        <ul>
+          <li>{{pricing.growth_1}}</li>
+          <li>{{pricing.growth_2}}</li>
+          <li>{{pricing.growth_3}}</li>
+          <li>{{pricing.growth_4}}</li>
+          <li>{{pricing.growth_5}}</li>
+        </ul>
+        <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="price-btn">{{pricing.get_started}}</a>
+      </div>
+      <div class="price-card">
+        <div class="price-name">{{pricing.elite_name}}</div>
+        <div class="price-amount">From £1,495<span>{{units.per_month}}</span></div>
+        <div class="price-setup">{{pricing.elite_setup}}</div>
+        <ul>
+          <li>{{pricing.elite_1}}</li>
+          <li>{{pricing.elite_2}}</li>
+          <li>{{pricing.elite_3}}</li>
+          <li>{{pricing.elite_4}}</li>
+        </ul>
+        <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="price-btn">{{pricing.get_started}}</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NEXORA COMPLETE -->
+<section id="complete">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">{{complete.eyebrow}}</div>
+      <h2>{{complete.title}}</h2>
+      <p>{{complete.intro}}</p>
+    </div>
+    <div class="quote-pricing-band reveal">
+      <h3>{{complete.band_title}}</h3>
+      <p>{{complete.band_text}}</p>
+      <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="btn-primary">{{complete.cta}}</a>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" style="padding-top:84px;">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">{{faq.eyebrow}}</div>
+      <h2>{{faq.title}}</h2>
+    </div>
+    <div class="faq-list reveal">
+      <details class="faq-item" open>
+        <summary>{{faq.q1_summary}}</summary>
+        <div class="faq-answer">{{faq.q1_answer}}</div>
+      </details>
+      <details class="faq-item">
+        <summary>{{faq.q2_summary}}</summary>
+        <div class="faq-answer">{{faq.q2_answer}}</div>
+      </details>
+      <details class="faq-item">
+        <summary>{{faq.q3_summary}}</summary>
+        <div class="faq-answer">{{faq.q3_answer}}</div>
+      </details>
+      <details class="faq-item">
+        <summary>{{faq.q4_summary}}</summary>
+        <div class="faq-answer">{{faq.q4_answer}}</div>
+      </details>
+      <details class="faq-item">
+        <summary>{{faq.q5_summary}}</summary>
+        <div class="faq-answer">{{faq.q5_answer}}</div>
+      </details>
+      <details class="faq-item">
+        <summary>{{faq.q6_summary}}</summary>
+        <div class="faq-answer">{{faq.q6_answer}}</div>
+      </details>
+      <details class="faq-item">
+        <summary>{{faq.q7_summary}}</summary>
+        <div class="faq-answer">{{faq.q7_answer}}</div>
+      </details>
+      <details class="faq-item">
+        <summary>{{faq.q8_summary}}</summary>
+        <div class="faq-answer">{{faq.q8_answer}}</div>
+      </details>
+      <details class="faq-item">
+        <summary>{{faq.q9_summary}}</summary>
+        <div class="faq-answer">{{faq.q9_answer}}</div>
+      </details>
+      <details class="faq-item">
+        <summary>{{faq.q10_summary}}</summary>
+        <div class="faq-answer">{{faq.q10_answer}}</div>
+      </details>
+      <details class="faq-item">
+        <summary>{{faq.q11_summary}}</summary>
+        <div class="faq-answer">{{faq.q11_answer}}</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA / CONTACT -->
+<section id="demo">
+  <div class="wrap">
+    <div class="final-cta reveal">
+      <div class="eyebrow" style="justify-content:center;">{{demo.eyebrow}}</div>
+      <h2>{{demo.title}}</h2>
+      <p>{{demo.intro}}</p>
+
+      <div class="btn-row">
+        <a href="https://calendly.com/nexoracreativestudio/aesthetic-demo" onclick="return openCalendlyPopup();" class="btn-primary">{{hero.cta_demo}}</a>
+      </div>
+
+      <div class="contact-btn-row">
+        <a href="https://wa.me/447440444478?text=Hello%2C%20I%20would%20like%20to%20know%20more%20about%20your%20services" target="_blank" rel="noopener" class="contact-btn whatsapp">{{demo.cta_whatsapp}}</a>
+        <a href="https://t.me/NexoraCreativeStudioAi" target="_blank" rel="noopener" class="contact-btn telegram">{{demo.cta_telegram}}</a>
+        <a href="tel:+442081913801" class="contact-btn">{{demo.cta_call_office}}</a>
+        <a href="mailto:contact@nexorastudio.uk" class="contact-btn">{{demo.cta_email_us}}</a>
+      </div>
+
+      <div class="contact-info-grid">
+        <div class="contact-info-item">
+          <div class="contact-info-label">{{demo.label_office}}</div>
+          <div class="contact-info-value"><a href="tel:+442081913801">020 8191 3801</a></div>
+        </div>
+        <div class="contact-info-item">
+          <div class="contact-info-label">{{demo.label_mobile}}</div>
+          <div class="contact-info-value"><a href="tel:+447440444478">+44 7440 444478</a></div>
+        </div>
+        <div class="contact-info-item">
+          <div class="contact-info-label">{{demo.label_email}}</div>
+          <div class="contact-info-value"><a href="mailto:contact@nexorastudio.uk">contact@nexorastudio.uk</a></div>
+        </div>
+        <div class="contact-info-item">
+          <div class="contact-info-label">{{demo.label_location}}</div>
+          <div class="contact-info-value">{{demo.location_value}}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+

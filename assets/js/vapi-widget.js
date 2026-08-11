@@ -6,6 +6,31 @@
   const VAPI_PUBLIC_KEY = "135e1b92-d3da-4d98-96fe-d27f07b86fd8";
   const VAPI_ASSISTANT_ID = "8d7ec5a4-e3b8-4850-8d35-19513928a90b";
 
+  /* ---- i18n: user-facing VAPI status text ---- */
+  const vapiI18n = {
+    en: {
+      requestingMic: 'Requesting microphone…',
+      callFailed: 'Could not start the call. Please check microphone permissions and try again.',
+      connected: 'Connected — say hello!',
+      callEnded: 'Call ended.',
+      speaking: 'Nexora AI is speaking…',
+      listening: 'Listening…',
+      connectionError: 'Connection error. Please try again.'
+    },
+    de: {
+      requestingMic: 'Mikrofon wird angefordert…',
+      callFailed: 'Anruf konnte nicht gestartet werden. Bitte überprüfen Sie die Mikrofonfreigabe und versuchen Sie es erneut.',
+      connected: 'Verbunden — sagen Sie Hallo!',
+      callEnded: 'Anruf beendet.',
+      speaking: 'Nexora KI spricht…',
+      listening: 'Zuhören…',
+      connectionError: 'Verbindungsfehler. Bitte versuchen Sie es erneut.'
+    }
+  };
+
+  const vapiLang = (document.documentElement.lang || 'en').toLowerCase();
+  const vt = vapiI18n[vapiLang] || vapiI18n.en;
+
   let vapi;
   try {
     vapi = new VapiSDK(VAPI_PUBLIC_KEY);
@@ -80,13 +105,13 @@
       return;
     }
     showWidget();
-    setStatus('Requesting microphone…');
+    setStatus(vt.requestingMic);
     resetOrbs();
     try {
       await vapi.start(VAPI_ASSISTANT_ID);
     } catch (err) {
       console.error('Vapi start error:', err);
-      setStatus('Could not start the call. Please check microphone permissions and try again.', true);
+      setStatus(vt.callFailed, true);
       setTimeout(() => { if (!callActive) hideWidget(); }, 4000);
     }
   }
@@ -116,7 +141,7 @@
   if (vapi) {
     vapi.on('call-start', () => {
       callActive = true;
-      setStatus('Connected — say hello!');
+      setStatus(vt.connected);
       setButtonsActive(true);
       startTimer();
     });
@@ -126,7 +151,7 @@
       stopTimer();
       resetOrbs();
       setButtonsActive(false);
-      setStatus('Call ended.');
+      setStatus(vt.callEnded);
       setTimeout(hideWidget, 1500);
     });
 
@@ -134,12 +159,12 @@
       // Assistant has started speaking
       aiOrb.classList.add('speaking');
       userOrb.classList.remove('speaking');
-      setStatus('Nexora AI is speaking…');
+      setStatus(vt.speaking);
     });
 
     vapi.on('speech-end', () => {
       aiOrb.classList.remove('speaking');
-      setStatus('Listening…');
+      setStatus(vt.listening);
     });
 
     vapi.on('volume-level', (level) => {
@@ -159,7 +184,7 @@
       stopTimer();
       resetOrbs();
       setButtonsActive(false);
-      setStatus('Connection error. Please try again.', true);
+      setStatus(vt.connectionError, true);
       setTimeout(hideWidget, 3000);
     });
   }
