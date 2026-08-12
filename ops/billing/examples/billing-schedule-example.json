@@ -1,0 +1,106 @@
+{
+  "schema": "nexora-billing/v1",
+  "billing_schedule_id": "SCH-2026-9898",
+  "version": "1.0",
+  "currency": "GBP",
+  "offering": {
+    "code": "B2",
+    "category": "WEB",
+    "name": "Grow"
+  },
+  "source": {
+    "proposal_id": "PRP-2026-9104",
+    "proposal_version": "1.0",
+    "agreement_id": "AGR-2026-9898",
+    "agreement_version": "1.0",
+    "agreement_checksum_sha256": "8419d91665139f327c72573e040704682cd6c61bef433d87aedca8e755b70c00",
+    "execution_id": "EXE-2026-9898",
+    "execution_fingerprint": "f96d60b43660aa947b7672ff3357d0ca4f9372ff7f06d4e0b2160f4b9b33ee12"
+  },
+  "commercial_basis": {
+    "approved_final_project_price": 5100,
+    "reference_price_from": 4250,
+    "setup_fee": null,
+    "milestone_schedule": [
+      40,
+      30,
+      30
+    ],
+    "recurring_fees": null,
+    "care": null
+  },
+  "items": [
+    {
+      "index": 0,
+      "invoice_type": "PROJECT_MILESTONE",
+      "label": "Milestone 1",
+      "amount": 2040,
+      "percentage": 40,
+      "milestone": {
+        "index": 1,
+        "total_milestones": 3,
+        "percentage": 40,
+        "amount": 2040,
+        "is_final": false
+      },
+      "issuance": {
+        "gate": "EXECUTED",
+        "note": "First project invoice allowed after EXECUTED Agreement.",
+        "satisfied": false
+      }
+    },
+    {
+      "index": 1,
+      "invoice_type": "PROJECT_MILESTONE",
+      "label": "Milestone 2",
+      "amount": 1530,
+      "percentage": 30,
+      "milestone": {
+        "index": 2,
+        "total_milestones": 3,
+        "percentage": 30,
+        "amount": 1530,
+        "is_final": false
+      },
+      "issuance": {
+        "gate": "MILESTONE_TRIGGER",
+        "note": "Subsequent milestone invoices require a milestone-ready trigger/evidence. Policy unresolved — OWNER/OPERATIONS DECISION REQUIRED — MILESTONE INVOICE TRIGGER",
+        "satisfied": false
+      }
+    },
+    {
+      "index": 2,
+      "invoice_type": "FINAL_BALANCE",
+      "label": "Final Balance",
+      "amount": 1530,
+      "percentage": 30,
+      "milestone": {
+        "index": 3,
+        "total_milestones": 3,
+        "percentage": 30,
+        "amount": 1530,
+        "is_final": true
+      },
+      "issuance": {
+        "gate": "MILESTONE_TRIGGER",
+        "note": "Subsequent milestone invoices require a milestone-ready trigger/evidence. Policy unresolved — OWNER/OPERATIONS DECISION REQUIRED — MILESTONE INVOICE TRIGGER",
+        "satisfied": false
+      }
+    }
+  ],
+  "project_total": 5100,
+  "recurring": {},
+  "generated_at": "2026-08-11T10:00:00.000Z",
+  "audit_events": [
+    {
+      "event": "schedule_created",
+      "at": "2026-08-11T10:00:00.000Z",
+      "event_id": "240dde098ec9cac2",
+      "detail": "Billing schedule derived from EXECUTED Agreement execution — schedule generation is NOT invoice issuance."
+    }
+  ],
+  "numbering_note": "NX-INV-YYYY-NNNN is a technical sequence under PROP.8. The accounting system becomes authoritative for real invoice numbering.",
+  "vat_note": "VAT status is UNDETERMINED — no tax determination is made. OWNER/ACCOUNTING DECISION REQUIRED — VAT AND STATUTORY INVOICE ISSUANCE.",
+  "schedule_fingerprint": "1a9659a7198c41682617c717cd638afcd17131e2f629920bd7e4c9249e88a5f0",
+  "_example": true
+}
