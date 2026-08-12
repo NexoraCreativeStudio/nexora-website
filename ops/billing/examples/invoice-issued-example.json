@@ -1,0 +1,98 @@
+{
+  "schema": "nexora-invoice/v1",
+  "invoice_id": "INV-2026-9898-001",
+  "invoice_version": "1.0",
+  "invoice_number": "NX-INV-2026-0001",
+  "invoice_type": "PROJECT_MILESTONE",
+  "status": "ISSUED",
+  "currency": "GBP",
+  "source": {
+    "proposal_id": "PRP-2026-9104",
+    "proposal_version": "1.0",
+    "agreement_id": "AGR-2026-9898",
+    "agreement_version": "1.0",
+    "execution_id": "EXE-2026-9898",
+    "execution_fingerprint": "f96d60b43660aa947b7672ff3357d0ca4f9372ff7f06d4e0b2160f4b9b33ee12"
+  },
+  "client": {
+    "name": "Example Client",
+    "company": "Example Clinic Ltd",
+    "billing_email": null,
+    "billing_address": null
+  },
+  "project": {
+    "title": "Grow Website — Example Clinic"
+  },
+  "offering": {
+    "code": "B2",
+    "category": "WEB",
+    "name": "Grow"
+  },
+  "commercial_basis": {
+    "approved_final_project_price": 5100,
+    "reference_price_from": 4250,
+    "setup_fee": null,
+    "milestone_schedule": [
+      40,
+      30,
+      30
+    ],
+    "recurring_fees": null,
+    "care": null
+  },
+  "line_items": [
+    {
+      "description": "Nexora Grow — Milestone 1 (40% of Approved Final Project Price)",
+      "quantity": 1,
+      "unit_price": 2040,
+      "line_total": 2040
+    }
+  ],
+  "subtotal": 2040,
+  "tax_status": "UNDETERMINED",
+  "tax_amount": null,
+  "total": 2040,
+  "issue_date": "2026-08-15",
+  "due_date": "2026-08-22",
+  "milestone": {
+    "index": 1,
+    "total_milestones": 3,
+    "percentage": 40,
+    "amount": 2040,
+    "is_final": false,
+    "label": "Milestone 1",
+    "trigger_evidence": null
+  },
+  "recurring": null,
+  "care": null,
+  "issuance": {
+    "gate": "EXECUTED",
+    "satisfied": true,
+    "evidence_ref": "EXE-2026-9898",
+    "note": "First project invoice allowed after EXECUTED Agreement."
+  },
+  "payment": {
+    "method_text": "Bank transfer — details supplied separately (provider activation is an Owner action)",
+    "payment_reference": "NX-INV-2026-0001",
+    "status": "UNPAID"
+  },
+  "created_at": "2026-08-15T09:00:00.000Z",
+  "audit_events": [
+    {
+      "event": "invoice_created",
+      "at": "2026-08-15T09:00:00.000Z",
+      "event_id": "d3474dbd39bf2457",
+      "detail": "Invoice record created for schedule item 1 (PROJECT_MILESTONE). Invoice created != payment collected."
+    },
+    {
+      "event": "invoice_issued",
+      "at": "2026-08-15T09:00:00.000Z",
+      "event_id": "d3df6e10388df744",
+      "detail": "Invoice issued. ISSUED != PAID."
+    }
+  ],
+  "vat_note": "VAT status is UNDETERMINED — no tax determination is made. OWNER/ACCOUNTING DECISION REQUIRED — VAT AND STATUTORY INVOICE ISSUANCE.",
+  "numbering_note": "NX-INV-YYYY-NNNN is a technical sequence under PROP.8. The accounting system becomes authoritative for real invoice numbering.",
+  "_example": true,
+  "invoice_fingerprint": "1cb8930e1992649f9ee987ab2c55780e6f5452d5e5298083ba0545e76817da24"
+}

@@ -34,3 +34,11 @@ ops/documents/out/
 # "_example": true. The real e-signature provider is unresolved (OWNER DECISION REQUIRED).
 ops/execution/private/
 ops/execution/out/
+
+# Invoice & Billing Engine (PROP.8) — real invoices, billing schedules, Go-Live
+# records, recurring-billing state and payment/reconciliation material are private.
+# Never commit real client invoices, addresses, prices, billing history, bank
+# details, or payment records. Committed fixtures under ops/billing/examples/ are
+# synthetic only and must carry "_example": true.
+ops/billing/private/
+ops/billing/out/
