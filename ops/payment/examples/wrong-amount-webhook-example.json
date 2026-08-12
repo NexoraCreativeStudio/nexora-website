@@ -1,0 +1,33 @@
+{
+  "schema": "nexora-payment-webhook/v1",
+  "event_id": "da4dd5ab3b68734b07e69d6a",
+  "provider": "TEST_ADAPTER",
+  "environment": "TEST",
+  "provider_ref": "test_ref_3d18dcf40e2db5a1",
+  "event_type": "payment_succeeded",
+  "event_time": "2026-08-15T14:00:00.000Z",
+  "recorded_at": "2026-08-15T14:00:00.000Z",
+  "invoice_id": "INV-2026-9898-001",
+  "payment_request_id": "REQ-2026-9898-001",
+  "amount": 1000,
+  "currency": "GBP",
+  "signature_verified": true,
+  "normalized_evidence": {
+    "provider_ref": "test_ref_3d18dcf40e2db5a1",
+    "status": "succeeded",
+    "amount": 1000,
+    "currency": "GBP"
+  },
+  "idempotency_key": "da4dd5ab3b68734b07e69d6a",
+  "_test_only": true,
+  "audit_events": [
+    {
+      "event": "webhook_received",
+      "at": "2026-08-15T14:00:00.000Z",
+      "event_id": "0a9b7165eaafe1e5",
+      "detail": "Provider event normalised from TEST_ADAPTER (TEST). WEBHOOK RECEIVED != PAID."
+    }
+  ],
+  "_example": true,
+  "webhook_fingerprint": "17792722d6fe9478535c9800bd37f2daf130614db49af0b533f975c28f68517c"
+}
