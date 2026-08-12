@@ -721,7 +721,7 @@ function negativeTests(agreementPaths, executions, schedules) {
 
   /* 28. secret-like credential refused. */
   const sec = invoice();
-  sec.audit_events[0].detail = 'TEST_SECRET_PLACEHOLDER_FOR_VALIDATOR_TEST';
+  sec.audit_events[0].detail = 'sk_test_TESTING12345678901234';
   const v28 = validateInvoiceRecord(sec, { requireExampleMarker: true });
   if (v28.failures.some((x) => /secret/.test(x))) ok('28. secret-like credential refused');
   else bad('28. secret-like credential refused', v28.failures.join('; ') || 'no refusal');
