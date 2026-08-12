@@ -1,0 +1,42 @@
+{
+  "schema": "nexora-payment/v1",
+  "payment_id": "PAY-2026-9898-001",
+  "request_id": "REQ-2026-9898-001",
+  "invoice_id": "INV-2026-9898-001",
+  "invoice_version": "1.0",
+  "invoice_number": "NX-INV-2026-0001",
+  "invoice_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+  "currency": "GBP",
+  "amount_expected": 2040,
+  "amount_received": 2040,
+  "amount_remaining": 0,
+  "payment_purpose": "PROJECT_MILESTONE",
+  "milestone": { "index": 1, "total_milestones": 3 },
+  "recurring": null,
+  "care": null,
+  "provider": "TEST_ADAPTER",
+  "environment": "TEST",
+  "source": {
+    "proposal_id": "PRP-2026-9898",
+    "proposal_version": "1.0",
+    "agreement_id": "AGR-2026-9898",
+    "agreement_version": "1.0",
+    "execution_id": "EXE-2026-9898",
+    "execution_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "status": "PAID",
+  "evidence": [
+    "test_evt_0000000000000001"
+  ],
+  "refunds": [],
+  "disputes": [],
+  "settled_at": "2026-08-15T14:30:00.000Z",
+  "created_at": "2026-08-15T09:00:00.000Z",
+  "audit_events": [
+    { "event": "payment_created", "at": "2026-08-15T09:00:00.000Z", "event_id": "example000000002", "detail": "Payment record created from request REQ-2026-9898-001. PAYMENT REQUEST != PAID." },
+    { "event": "evidence_recorded", "at": "2026-08-15T14:00:00.000Z", "event_id": "example000000003", "detail": "Provider evidence recorded (test_evt_0000000000000001). Reconciliation required before PAID." },
+    { "event": "reconciled_exact", "at": "2026-08-15T14:30:00.000Z", "event_id": "example000000004", "detail": "Reconciled EXACT 2040 GBP. PAID requires governed reconciled payment evidence." }
+  ],
+  "_example": true,
+  "payment_fingerprint": "5fe9608e4d30c82eba6879482d8df6f6e28941be23b0a7596969ff578b186e9d"
+}

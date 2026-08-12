@@ -864,4 +864,4 @@ export function scanFinancialClaims(text) {
 }
 
 /* Re-exported shared scanners for the validator. */
-export { sha256hex, scanLegacy, scanVatAssertions, scanSecrets, agreementChecksum, buildExecutionFingerprint };
+export { sha256hex, scanLegacy, scanVatAssertions, scanSecrets, agreementChecksum, buildExecutionFingerprint, scanPathLeakage };
