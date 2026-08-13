@@ -1,0 +1,18 @@
+{
+  "schema": "nexora-payment/v1",
+  "payment_id": "PAY-2026-9898-002",
+  "payment_request_id": "REQ-2026-9898-001",
+  "invoice_id": "INV-2026-9898-001",
+  "provider": "STRIPE",
+  "environment": "TEST",
+  "status": "CREATED",
+  "amount_expected": 2040,
+  "amount_received": 0,
+  "amount_remaining": 2040,
+  "currency": "GBP",
+  "created_at": "2026-08-15T09:00:00.000Z",
+  "updated_at": "2026-08-15T09:00:00.000Z",
+  "evidence": [],
+  "audit_events": [],
+  "_example": true
+}

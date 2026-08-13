@@ -618,6 +618,8 @@ test('No secret exposure in client-side artifacts', () => {
   const excludeFiles = [
     'production-checklist.mjs',  // Contains 'whsec_' in gate descriptions
     'stripe-config.mjs',         // Contains patterns in schema/validation
+    'validate-runtime-hardening.mjs', // PROP.12 validation — contains patterns in test logic
+    'webhook-verifier.mjs',      // PROP.12 verifier — contains patterns in validation logic
   ];
 
   function scanDir(dir, results) {

@@ -1,23 +1,13 @@
-/* Nexora — Stripe TEST Webhook Endpoint (PROP.11)
+/* Nexora — Stripe TEST Webhook Endpoint (PROP.12)
    POST /api/payment/webhook
-   Handles Stripe webhook events, verifies signatures (TEST mode),
+   Handles Stripe webhook events, verifies signatures via governed verifier,
    normalizes to governed webhook record, triggers PROP.9 reconciliation.
-   TEST/SANDBOX only — no LIVE credentials. */
+   TEST/SANDBOX only — no LIVE credentials.
+   Uses governed storage abstraction (runtime-storage.mjs) and webhook verifier (webhook-verifier.mjs). */
 
 import { createHash } from 'crypto';
-import { StripeTestAdapter, normalizeStripeCheckoutSession } from '../../ops/payment/portal-session.mjs';
-import { StripeAdapter } from '../../ops/payment/stripe-adapter.mjs';
-import {
-  normalizeWebhookEvent,
-  verifyWebhookSignature,
-  STRIPE_RECONCILIATION_EVENT_TYPES
-} from '../../ops/payment/stripe-adapter.mjs';
-import {
-  validateWebhookContract,
-  WEBHOOK_PROCESSING_RULES,
-  SUPPORTED_PAYMENT_EVENT_TYPES,
-  SUPPORTED_PAYOUT_EVENT_TYPES
-} from '../../ops/payment/webhook-contract.mjs';
+import { join } from 'path';
+import { StripeTestAdapter, StripeAdapter, STRIPE_RECONCILIATION_EVENT_TYPES } from '../../ops/payment/stripe-adapter.mjs';
 import {
   RECONCILIATION_SCHEMA,
   PAYMENT_SCHEMA,
@@ -25,24 +15,21 @@ import {
   applyPaymentEvent,
   applyReconciliation,
   TestPaymentAdapter,
-  PaymentProviderAdapter,
-  buildPaymentRecord,
-  buildWebhookFingerprint,
-  verifyWebhookFingerprint,
-  sha256hex
+  buildPaymentRecord
 } from '../../ops/payment/payment-validation.mjs';
-import { buildPortalSession, validatePortalSession, markWebhookReceived, markReconciled, sessionStore } from '../../ops/payment/portal-session.mjs';
+import { markWebhookReceived, markReconciled } from '../../ops/payment/portal-session.mjs';
+import { createStorageAdapter } from '../../ops/payment/runtime-storage.mjs';
+import { createWebhookVerifier } from '../../ops/payment/webhook-verifier.mjs';
 
 const OPS_DIR = join(process.cwd(), 'ops');
 const PAYMENT_DIR = join(OPS_DIR, 'payment');
 const OUT_DIR = join(PAYMENT_DIR, 'out');
 
-/* In production, sessions and payments would be in a database.
-   For TEST/SANDBOX, we use in-memory storage. */
-const paymentStore = new Map();
+/* Governed storage adapter (TEST mode uses deterministic file storage) */
+const storage = createStorageAdapter({ environment: 'TEST', config: { baseDir: join(PAYMENT_DIR, 'private', 'test-runtime') } });
 
-/* TEST webhook secret (synthetic) */
-const STRIPE_TEST_WEBHOOK_SECRET_REF = process.env.STRIPE_WEBHOOK_SECRET || null;
+/* Governed webhook verifier (TEST mode uses deterministic simulation) */
+const verifier = createWebhookVerifier({ environment: 'TEST', config: {} });
 
 /* Get raw body for signature verification */
 async function getRawBody(req) {
@@ -54,42 +41,16 @@ async function getRawBody(req) {
   });
 }
 
-/* Simulate Stripe signature verification (TEST mode) */
-function simulateTestSignatureVerification(rawPayload, signatureHeader) {
-  // In TEST mode, we accept any signature that looks like a Stripe test signature
-  // Real verification would use: stripe.webhooks.constructEvent(payload, sig, secret)
-  if (signatureHeader && signatureHeader.startsWith('t=') && signatureHeader.includes('v1=')) {
-    return { ok: true, verified: true, note: 'TEST MODE — signature verification simulated' };
-  }
-  return { ok: false, verified: false, reason: 'Invalid test signature format' };
-}
-
-/* Find portal session by Stripe Checkout Session ID */
-function findPortalSessionByCheckoutSessionId(checkoutSessionId) {
-  for (const [_, session] of sessionStore) {
-    if (session.stripe_checkout_session_id === checkoutSessionId) {
-      return session;
-    }
-  }
-  return null;
-}
-
-/* Find payment record by payment request ID */
-function findPaymentByRequestId(requestId) {
-  for (const [_, payment] of paymentStore) {
-    if (payment.payment_request_id === requestId) {
-      return payment;
-    }
-  }
-  return null;
-}
-
 /* Trigger PROP.9 reconciliation */
 async function triggerReconciliation(webhookEvent, paymentRecord) {
   const { TestPaymentAdapter } = await import('../../ops/payment/payment-validation.mjs');
 
   const adapter = new TestPaymentAdapter();
-  const result = adapter.reconcilePayment(paymentRecord, webhookEvent);
+  const result = adapter.reconcilePayment(webhookEvent, {
+    invoice: { invoice_id: webhookEvent.invoice_id, amount_requested: webhookEvent.amount, currency: webhookEvent.currency },
+    request: { request_id: webhookEvent.payment_request_id, amount_requested: webhookEvent.amount, currency: webhookEvent.currency },
+    seenEventIds: new Set()
+  });
 
   return result;
 }
@@ -124,8 +85,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Invalid JSON payload' });
     }
 
-    // Verify signature (TEST mode simulation)
-    const sigResult = simulateTestSignatureVerification(rawBody, signatureHeader);
+    // Verify signature via governed webhook verifier
+    const sigResult = await verifier.verify(rawBody.toString('utf8'), signatureHeader, 'whsec_test');
     if (!sigResult.verified) {
       console.warn('Webhook signature verification failed:', sigResult.reason);
       return res.status(400).json({ ok: false, error: 'Webhook signature verification failed' });
@@ -161,37 +122,33 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Missing lineage metadata' });
     }
 
-    // Find portal session
+    // Find portal session via governed storage
     let portalSession = null;
     if (webhookEvent.normalized_evidence?.provider_ref) {
-      portalSession = findPortalSessionByCheckoutSessionId(webhookEvent.normalized_evidence.provider_ref);
+      portalSession = await storage.findSessionByCheckoutSessionId(webhookEvent.normalized_evidence.provider_ref);
     }
 
-    // Find or create payment record
-    let paymentRecord = findPaymentByRequestId(webhookEvent.payment_request_id);
+    // Find or create payment record via governed storage
+    let paymentRecord = await storage.findPaymentByRequestId(webhookEvent.payment_request_id);
 
     if (!paymentRecord) {
       // Build payment record from governed payment request
-      // In production, fetch from database
-      paymentRecord = {
-        schema: PAYMENT_SCHEMA,
-        payment_id: `PAY-${createHash('sha256').update(`nexora-pay:${webhookEvent.payment_request_id}`).digest('hex').slice(0, 24)}`,
-        payment_request_id: webhookEvent.payment_request_id,
-        invoice_id: webhookEvent.invoice_id,
-        provider: 'STRIPE',
-        environment: 'TEST',
-        status: 'PROCESSING',
-        amount_expected: webhookEvent.amount,
-        amount_received: 0,
-        currency: webhookEvent.currency,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        evidence: [],
-        audit_events: [
-          { event: 'payment_created', at: new Date().toISOString(), event_id: createHash('sha256').update(`nexora-pay:${webhookEvent.payment_request_id}`).digest('hex').slice(0, 16), detail: 'Payment record created from webhook' }
-        ],
-      };
-      paymentStore.set(paymentRecord.payment_id, paymentRecord);
+      const paymentBuild = buildPaymentRecord(
+        { request_id: webhookEvent.payment_request_id, invoice_id: webhookEvent.invoice_id, amount_requested: webhookEvent.amount, currency: webhookEvent.currency, environment: 'TEST' },
+        { example: true, createdAt: new Date().toISOString() }
+      );
+      if (!paymentBuild.ok) {
+        return res.status(500).json({ ok: false, error: 'Failed to build payment record', reasons: paymentBuild.reasons });
+      }
+      paymentRecord = paymentBuild.payment;
+      await storage.createPayment(paymentRecord);
+    }
+
+    // Check idempotency
+    const idemCheck = await storage.checkIdempotency(webhookEvent.idempotency_key);
+    if (idemCheck.exists) {
+      console.log('Duplicate webhook event detected (idempotency):', webhookEvent.idempotency_key);
+      return res.status(200).json({ ok: true, received: true, duplicate: true, event_id: webhookEvent.event_id });
     }
 
     // Apply webhook event to payment record (evidence recording)
@@ -201,12 +158,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Failed to record webhook evidence', reasons: eventResult.reasons });
     }
     paymentRecord = eventResult.payment;
+    await storage.updatePayment(paymentRecord);
 
     // Update portal session if found
     if (portalSession) {
       const webhookMarked = markWebhookReceived(portalSession, webhookEvent);
       if (webhookMarked.ok) {
-        sessionStore.set(portalSession.session_id, webhookMarked.session);
+        await storage.updateSession(webhookMarked.session);
       }
     }
 
@@ -220,20 +178,23 @@ export default async function handler(req, res) {
         const reconApplied = applyReconciliation(paymentRecord, reconciliationResult.reconciliation);
         if (reconApplied.ok) {
           paymentRecord = reconApplied.payment;
+          await storage.updatePayment(paymentRecord);
 
           // Update portal session to reconciled
           if (portalSession && (reconciliationResult.reconciliation.outcome === 'EXACT' || reconciliationResult.reconciliation.outcome === 'PARTIAL')) {
             const reconciled = markReconciled(portalSession, reconciliationResult.reconciliation);
             if (reconciled.ok) {
-              sessionStore.set(portalSession.session_id, reconciled.session);
+              await storage.updateSession(reconciled.session);
             }
           }
         }
       }
     }
 
-    // In production, persist paymentRecord and portalSession to database
-    // For TEST, just log
+    // Set idempotency key
+    await storage.setIdempotency(webhookEvent.idempotency_key, webhookEvent.event_id);
+
+    // Log processing result
     console.log('Webhook processed:', {
       event_id: webhookEvent.event_id,
       event_type: webhookEvent.event_type,

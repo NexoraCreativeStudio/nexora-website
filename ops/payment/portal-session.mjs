@@ -112,7 +112,15 @@ export function attachCheckoutSession(session, stripeCheckoutSession, opts = {})
   next.status = 'CHECKOUT_CREATED';
   next.stripe_checkout_session_id = stripeCheckoutSession.id;
   next.stripe_checkout_session_url = stripeCheckoutSession.url;
-  next.stripe_checkout_session_expires_at = stripeCheckoutSession.expires_at ? new Date(stripeCheckoutSession.expires_at * 1000).toISOString() : null;
+  // Handle both Unix timestamp (seconds) and ISO string formats
+  if (stripeCheckoutSession.expires_at) {
+    const expiresMs = typeof stripeCheckoutSession.expires_at === 'number'
+      ? stripeCheckoutSession.expires_at * 1000
+      : new Date(stripeCheckoutSession.expires_at).getTime();
+    next.stripe_checkout_session_expires_at = new Date(expiresMs).toISOString();
+  } else {
+    next.stripe_checkout_session_expires_at = null;
+  }
   next.audit_events = [...(session.audit_events || []), { event: 'checkout_session_attached', at: new Date().toISOString(), event_id: createHash('sha256').update(`nexora-pss:${session.sessionId}:checkout:${Date.now()}`).digest('hex').slice(0, 16), detail: `Stripe Checkout Session ${stripeCheckoutSession.id} attached` }];
   return { ok: true, session: next };
 }

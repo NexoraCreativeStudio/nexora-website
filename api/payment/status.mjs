@@ -1,24 +1,23 @@
-/* Nexora — Payment Status API (PROP.11)
+/* Nexora — Payment Status API (PROP.12)
    GET /api/payment/status/:session_id
    Returns the governed status of a payment portal session.
-   Does NOT mark PAID on redirect — only PROP.9 reconciliation does. */
+   Does NOT mark PAID on redirect — only PROP.9 reconciliation does.
+   Uses governed storage abstraction (runtime-storage.mjs) for persistence. */
 
 import { createHash } from 'crypto';
-import { sessionStore } from '../../ops/payment/portal-session.mjs';
+import { join } from 'path';
+import { createStorageAdapter } from '../../ops/payment/runtime-storage.mjs';
 
 const OPS_DIR = join(process.cwd(), 'ops');
 const PAYMENT_DIR = join(OPS_DIR, 'payment');
 const OUT_DIR = join(PAYMENT_DIR, 'out');
 
-/* In production, sessions would be in a database.
-   For TEST/SANDBOX, we use in-memory storage. */
+/* Governed storage adapter (TEST mode uses deterministic file storage) */
+const storage = createStorageAdapter({ environment: 'TEST', config: { baseDir: join(PAYMENT_DIR, 'private', 'test-runtime') } });
 
-function getTestPortalSession(sessionId) {
-  // Check in-memory store
-  if (sessionStore.has(sessionId)) {
-    return sessionStore.get(sessionId);
-  }
-  return null;
+async function getPortalSession(sessionId) {
+  // Check governed storage
+  return await storage.getSession(sessionId);
 }
 
 /* Main handler */
@@ -45,7 +44,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const session = getTestPortalSession(sessionId);
+    const session = await getPortalSession(sessionId);
 
     if (!session) {
       return res.status(404).json({ ok: false, error: 'Session not found' });
@@ -82,7 +81,7 @@ export default async function handler(req, res) {
 
 /* For local testing */
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const testReq = { method: 'GET', query: { session_id: 'PSS-AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8' } };
+  const testReq = { method: 'GET', query: { session_id: 'PSS-dnqeauWAoxwvhUFCWsb-iKrBcR9sjCMlrtfY0EuFxss' } };
   const testRes = {
     statusCode: 200,
     headers: {},

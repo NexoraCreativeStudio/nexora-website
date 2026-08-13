@@ -1,12 +1,15 @@
-/* Nexora — Stripe TEST Checkout Session Creation API (PROP.11)
+/* Nexora — Stripe TEST Checkout Session Creation API (PROP.12)
    POST /api/payment/checkout
    Creates a Stripe Checkout Session for a validated payment token.
-   TEST/SANDBOX only — no LIVE credentials, no real Stripe calls. */
+   TEST/SANDBOX only — no LIVE credentials, no real Stripe calls.
+   Uses governed storage abstraction (runtime-storage.mjs) for persistence. */
 
 import { createHash } from 'crypto';
-import { StripeTestAdapter, buildCheckoutSessionRequest, normalizeStripeCheckoutSession } from '../../ops/payment/portal-session.mjs';
+import { join } from 'path';
+import { StripeTestAdapter } from '../../ops/payment/stripe-adapter.mjs';
+import { buildCheckoutSessionRequest, normalizeStripeCheckoutSession, buildPortalSession, validatePortalSession, attachCheckoutSession, checkSessionValidForCheckout } from '../../ops/payment/portal-session.mjs';
 import { buildPaymentToken, checkTokenUsable, validatePaymentToken, TOKEN_EXAMPLE, markTokenUsed } from '../../ops/payment/token-model.mjs';
-import { buildPortalSession, validatePortalSession, attachCheckoutSession, checkSessionValidForCheckout } from '../../ops/payment/portal-session.mjs';
+import { createStorageAdapter } from '../../ops/payment/runtime-storage.mjs';
 
 const OPS_DIR = join(process.cwd(), 'ops');
 const PAYMENT_DIR = join(OPS_DIR, 'payment');
@@ -18,25 +21,24 @@ const STRIPE_TEST_CONFIG = {
   production_activation_gate: false,
 };
 
-/* In production, sessions would be stored in a database.
-   For TEST/SANDBOX, we use in-memory storage. */
-const sessionStore = new Map();
+/* Governed storage adapter (TEST mode uses deterministic file storage) */
+const storage = createStorageAdapter({ environment: 'TEST', config: { baseDir: join(PAYMENT_DIR, 'private', 'test-runtime') } });
 
-function getTestInvoice(invoiceId) {
+async function getTestInvoice(invoiceId) {
   const file = join(OPS_DIR, 'billing', 'examples', 'invoice-issued-example.json');
-  const fs = await import('fs');
-  if (fs.existsSync(file)) {
-    const invoice = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const { existsSync, readFileSync } = await import('fs');
+  if (existsSync(file)) {
+    const invoice = JSON.parse(readFileSync(file, 'utf8'));
     if (invoice.invoice_id === invoiceId) return invoice;
   }
   return null;
 }
 
-function getTestRequest(requestId) {
+async function getTestRequest(requestId) {
   const file = join(PAYMENT_DIR, 'examples', 'payment-request-example.json');
-  const fs = await import('fs');
-  if (fs.existsSync(file)) {
-    const request = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const { existsSync, readFileSync } = await import('fs');
+  if (existsSync(file)) {
+    const request = JSON.parse(readFileSync(file, 'utf8'));
     if (request.request_id === requestId) return request;
   }
   return null;
@@ -83,7 +85,7 @@ function createTestCheckoutSession(checkoutRequest) {
 
 /* Main handler */
 export default async function handler(req, res) {
-  const { readFileSync, existsSync } = await import('fs');
+  const { readFileSync, existsSync, writeFileSync, mkdirSync } = await import('fs');
   const { join } = await import('path');
 
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -124,8 +126,8 @@ export default async function handler(req, res) {
     }
 
     // Get invoice and request
-    const invoice = getTestInvoice(token.invoice_id);
-    const request = getTestRequest(token.payment_request_id);
+    const invoice = await getTestInvoice(token.invoice_id);
+    const request = await getTestRequest(token.payment_request_id);
 
     if (!invoice || !request) {
       return res.status(404).json({ ok: false, error: 'Associated invoice or request not found' });
@@ -170,8 +172,8 @@ export default async function handler(req, res) {
 
     portalSession = attached.session;
 
-    // Store session (in production, persist to database)
-    sessionStore.set(portalSession.session_id, portalSession);
+    // Store session via governed storage adapter
+    await storage.createSession(portalSession);
 
     // Mark token as used (single-use)
     const usedTokenResult = markTokenUsed(token);
