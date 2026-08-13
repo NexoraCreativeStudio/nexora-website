@@ -54,7 +54,7 @@ export function validateStripeConfig(config) {
   if (config.publishable_key && STRIPE_SECRET_PATTERNS[0].test(config.publishable_key)) {
     reasons.push('publishable_key appears to be a live key — forbidden in committed config');
   }
-  if (config.secret_key && STRIPE_SECRET_PATTERNS[1].test(config.secret_key)) {
+  if (config.secret_key && STRIPE_SECRET_PATTERNS[0].test(config.secret_key)) {
     reasons.push('secret_key appears to be a live secret key — forbidden in committed config');
   }
   if (config.webhook_secret && STRIPE_SECRET_PATTERNS[2].test(config.webhook_secret)) {
