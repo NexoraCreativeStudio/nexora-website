@@ -42,3 +42,10 @@ ops/execution/out/
 # synthetic only and must carry "_example": true.
 ops/billing/private/
 ops/billing/out/
+
+# Payment Runtime (PROP.11/12) — real payment portal sessions, webhook events,
+# reconciliation evidence, and payment records are private.
+# Never commit real client payment data. Committed fixtures under ops/payment/examples/
+# are synthetic only and must carry "_example": true.
+ops/payment/private/
+ops/payment/out/
