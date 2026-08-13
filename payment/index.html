@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexora — Payment Portal</title>
+  <meta name="description" content="Secure payment portal for Nexora invoices">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,300&family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/site.css">
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <style>
+    .payment-portal { max-width: 720px; margin: 0 auto; padding: var(--space-8) var(--space-4); }
+    .payment-portal__header { text-align: center; margin-bottom: var(--space-8); }
+    .payment-portal__eyebrow { color: var(--gold); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; font-size: var(--text-sm); margin-bottom: var(--space-2); }
+    .payment-portal__title { font-family: var(--font-heading); font-size: clamp(var(--text-3xl), 5vw, var(--text-4xl)); font-weight: 500; line-height: 1.2; color: var(--text); margin-bottom: var(--space-3); }
+    .payment-portal__subtitle { font-size: var(--text-lg); color: var(--muted); line-height: 1.6; }
+
+    .invoice-summary { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-6); }
+    .invoice-summary__row { display: flex; justify-content: space-between; align-items: center; padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+    .invoice-summary__row:last-child { border-bottom: none; }
+    .invoice-summary__label { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--muted); }
+    .invoice-summary__value { font-weight: 600; color: var(--text); text-align: right; }
+    .invoice-summary__total { font-size: var(--text-2xl); font-family: var(--font-heading); color: var(--gold); }
+
+    .payment-portal__actions { display: flex; flex-direction: column; gap: var(--space-4); margin-bottom: var(--space-8); }
+    .btn-portal { width: 100%; padding: var(--space-4) var(--space-6); font-size: var(--text-lg); font-weight: 600; }
+    .btn-portal:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .payment-portal__notice { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-4); font-size: var(--text-sm); color: var(--muted); line-height: 1.6; }
+    .payment-portal__notice strong { color: var(--text); }
+
+    .payment-portal__error { background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-lg); padding: var(--space-4); color: #991b1b; margin-bottom: var(--space-6); }
+    .payment-portal__error-title { font-weight: 600; margin-bottom: var(--space-2); }
+
+    .payment-portal__status { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-full); font-size: var(--text-sm); font-weight: 500; font-family: var(--font-mono); }
+    .payment-portal__status--active { background: #dcfce7; color: #166534; }
+    .payment-portal__status--used { background: #e0e7ff; color: #3730a3; }
+    .payment-portal__status--expired { background: #fef3c7; color: #92400e; }
+    .payment-portal__status--revoked { background: #fecaca; color: #991b1b; }
+
+    .loading-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .loading-overlay.hidden { display: none; }
+    .loading-spinner { width: 48px; height: 48px; border: 4px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (min-width: 640px) {
+      .payment-portal__actions { flex-direction: row; }
+      .btn-portal { width: auto; flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <header class="site-header" role="banner">
+    <div class="wrap site-header__inner">
+      <a href="/" class="site-header__logo" aria-label="Nexora Creative Studio — Home">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="currentColor"/>
+          <path d="M8 12h16M8 16h12M8 20h8" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <span>Nexora</span>
+      </a>
+      <nav class="site-header__nav" aria-label="Main navigation">
+        <a href="/" class="site-header__link">Home</a>
+        <a href="/platform/" class="site-header__link">Platform</a>
+        <a href="/results/" class="site-header__link">Results</a>
+        <a href="/luxury-clinic-websites/" class="site-header__link">Websites</a>
+        <a href="/contact/" class="btn btn-primary site-header__cta">Start a project</a>
+      </nav>
+      <button class="site-header__menu-btn" aria-expanded="false" aria-controls="mobile-menu" aria-label="Toggle menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="site-header__mobile" id="mobile-menu" hidden>
+      <nav class="site-header__mobile-nav">
+        <a href="/" class="site-header__mobile-link">Home</a>
+        <a href="/platform/" class="site-header__mobile-link">Platform</a>
+        <a href="/results/" class="site-header__mobile-link">Results</a>
+        <a href="/luxury-clinic-websites/" class="site-header__mobile-link">Websites</a>
+        <a href="/contact/" class="btn btn-primary site-header__mobile-cta">Start a project</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="payment-portal" id="payment-portal">
+    <!-- Loading state -->
+    <div class="loading-overlay" id="loading-overlay" aria-hidden="true">
+      <div class="loading-spinner" aria-label="Loading payment portal"></div>
+    </div>
+
+    <!-- Error state -->
+    <div class="payment-portal__error hidden" id="error-container" role="alert">
+      <div class="payment-portal__error-title" id="error-title">Unable to load payment portal</div>
+      <p id="error-message">Please check your payment link or contact support.</p>
+      <p class="payment-portal__error-detail" id="error-detail"></p>
+    </div>
+
+    <!-- Success state (after redirect from Stripe) -->
+    <div class="payment-portal__success hidden" id="success-container">
+      <div class="payment-portal__header">
+        <span class="payment-portal__eyebrow">Payment Received</span>
+        <h1 class="payment-portal__title">Payment Received for Processing</h1>
+        <p class="payment-portal__subtitle">Your payment has been received and is being processed. This page does not confirm payment — only verified webhook reconciliation marks an invoice as paid.</p>
+      </div>
+      <div class="invoice-summary">
+        <div class="invoice-summary__row">
+          <span class="invoice-summary__label">Invoice</span>
+          <span class="invoice-summary__value" id="success-invoice-number">NX-INV-2026-0001</span>
+        </div>
+        <div class="invoice-summary__row">
+          <span class="invoice-summary__label">Amount</span>
+          <span class="invoice-summary__value invoice-summary__total" id="success-amount">£2,040.00</span>
+        </div>
+        <div class="invoice-summary__row">
+          <span class="invoice-summary__label">Status</span>
+          <span class="invoice-summary__value">
+            <span class="payment-portal__status payment-portal__status--active" id="success-status">Processing</span>
+          </span>
+        </div>
+      </div>
+      <div class="payment-portal__notice">
+        <strong>Important:</strong> You will receive a confirmation email once the payment has been verified and reconciled. This typically takes a few minutes but may take up to 24 hours. Please do not make a duplicate payment.
+      </div>
+    </div>
+
+    <!-- Main payment portal (initial state) -->
+    <div class="payment-portal__main hidden" id="main-container">
+      <div class="payment-portal__header">
+        <span class="payment-portal__eyebrow">Secure Payment Portal</span>
+        <h1 class="payment-portal__title">Pay Invoice <span id="portal-invoice-number">NX-INV-2026-0001</span></h1>
+        <p class="payment-portal__subtitle">Review the invoice details below and proceed to secure checkout powered by Stripe.</p>
+      </div>
+
+      <div class="invoice-summary" id="invoice-summary">
+        <div class="invoice-summary__row">
+          <span class="invoice-summary__label">Invoice Number</span>
+          <span class="invoice-summary__value" id="inv-number">NX-INV-2026-0001</span>
+        </div>
+        <div class="invoice-summary__row">
+          <span class="invoice-summary__label">Invoice ID</span>
+          <span class="invoice-summary__value" id="inv-id">INV-2026-9898-001</span>
+        </div>
+        <div class="invoice-summary__row">
+          <span class="invoice-summary__label">Payment Reference</span>
+          <span class="invoice-summary__value" id="inv-payment-ref">REQ-2026-9898-001</span>
+        </div>
+        <div class="invoice-summary__row">
+          <span class="invoice-summary__label">Due Date</span>
+          <span class="invoice-summary__value" id="inv-due-date">22 August 2026</span>
+        </div>
+        <div class="invoice-summary__row">
+          <span class="invoice-summary__label">Amount Due</span>
+          <span class="invoice-summary__value invoice-summary__total" id="inv-amount">£2,040.00</span>
+        </div>
+      </div>
+
+      <div class="payment-portal__actions">
+        <a href="#" class="btn btn-ghost btn-portal" id="cancel-btn">Cancel</a>
+        <button class="btn btn-primary btn-portal" id="pay-btn" disabled>
+          <span id="pay-btn-text">Proceed to Secure Checkout</span>
+          <span class="hidden" id="pay-btn-loading">Redirecting…</span>
+        </button>
+      </div>
+
+      <div class="payment-portal__notice">
+        <strong>Secure Checkout:</strong> You will be redirected to Stripe's hosted checkout page to complete your payment. Nexora does not receive or store your card details. This payment link is unique to this invoice and expires in 7 days.
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="wrap site-footer__inner">
+      <div class="site-footer__brand">
+        <a href="/" class="site-footer__logo" aria-label="Nexora Creative Studio — Home">
+          <svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <rect width="32" height="32" rx="8" fill="currentColor"/>
+            <path d="M8 12h16M8 16h12M8 20h8" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          <span>Nexora</span>
+        </a>
+        <p class="site-footer__tagline">AI Receptionist &amp; Growth Automation for UK Aesthetic Clinics</p>
+      </div>
+      <nav class="site-footer__nav" aria-label="Footer navigation">
+        <div class="site-footer__column">
+          <h4>Platform</h4>
+          <ul>
+            <li><a href="/platform/ai-receptionist/">AI Receptionist</a></li>
+            <li><a href="/platform/ai-crm/">AI CRM</a></li>
+            <li><a href="/platform/analytics/">Analytics</a></li>
+            <li><a href="/platform/automations/">Automations</a></li>
+            <li><a href="/platform/lead-reactivation/">Lead Reactivation</a></li>
+            <li><a href="/platform/patient-journey/">Patient Journey</a></li>
+            <li><a href="/platform/knowledge-base/">Knowledge Base</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__column">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="/results/">Results</a></li>
+            <li><a href="/luxury-clinic-websites/">Websites</a></li>
+            <li><a href="/contact/">Contact</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__column">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="/privacy.html">Privacy Policy</a></li>
+            <li><a href="/terms.html">Terms of Service</a></li>
+            <li><a href="/cookies.html">Cookie Policy</a></li>
+          </ul>
+        </div>
+      </nav>
+      <div class="site-footer__bottom">
+        <p class="site-footer__copyright">&copy; 2026 Nexora Creative Studio. All rights reserved.</p>
+        <p class="site-footer__registered">Registered in England &amp; Wales. Company No. 12345678</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../assets/js/nav.js"></script>
+  <script>
+    (function() {
+      'use strict';
+
+      // DOM elements
+      const loadingOverlay = document.getElementById('loading-overlay');
+      const errorContainer = document.getElementById('error-container');
+      const errorTitle = document.getElementById('error-title');
+      const errorMessage = document.getElementById('error-message');
+      const errorDetail = document.getElementById('error-detail');
+      const successContainer = document.getElementById('success-container');
+      const mainContainer = document.getElementById('main-container');
+      const payBtn = document.getElementById('pay-btn');
+      const payBtnText = document.getElementById('pay-btn-text');
+      const payBtnLoading = document.getElementById('pay-btn-loading');
+      const cancelBtn = document.getElementById('cancel-btn');
+
+      // Invoice display elements
+      const portalInvoiceNumber = document.getElementById('portal-invoice-number');
+      const invNumber = document.getElementById('inv-number');
+      const invId = document.getElementById('inv-id');
+      const invPaymentRef = document.getElementById('inv-payment-ref');
+      const invDueDate = document.getElementById('inv-due-date');
+      const invAmount = document.getElementById('inv-amount');
+
+      // Success display elements
+      const successInvoiceNumber = document.getElementById('success-invoice-number');
+      const successAmount = document.getElementById('success-amount');
+      const successStatus = document.getElementById('success-status');
+
+      // State
+      let paymentToken = null;
+      let checkoutUrl = null;
+
+      // Initialize from URL token
+      function init() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const sessionId = urlParams.get('session_id');
+
+        // If coming back from Stripe success
+        if (sessionId) {
+          showSuccessState(sessionId);
+          return;
+        }
+
+        // If coming from Stripe cancel
+        if (urlParams.get('canceled') === 'true') {
+          showError('Payment Canceled', 'You returned from checkout without completing payment.', 'You can try again by clicking "Proceed to Secure Checkout" below.');
+          mainContainer.classList.remove('hidden');
+          return;
+        }
+
+        // Validate token parameter
+        if (!token) {
+          showError('Invalid Payment Link', 'No payment token provided.', 'Please check your payment link or request a new one from your Nexora account manager.');
+          return;
+        }
+
+        if (!/^PAT-[A-Za-z0-9_-]{43}$/.test(token)) {
+          showError('Invalid Payment Token', 'The payment token format is invalid.', 'Please check your payment link or request a new one from your Nexora account manager.');
+          return;
+        }
+
+        paymentToken = token;
+        loadPaymentDetails(token);
+      }
+
+      async function loadPaymentDetails(token) {
+        try {
+          // In production, this would call a server endpoint to validate the token
+          // For TEST/SANDBOX, we simulate by fetching from a local JSON file or API
+          const response = await fetch(`/api/payment/token/${encodeURIComponent(token)}`);
+
+          if (!response.ok) {
+            if (response.status === 404) {
+              throw new Error('Token not found or expired');
+            }
+            if (response.status === 410) {
+              throw new Error('Token has expired or been used');
+            }
+            if (response.status === 403) {
+              throw new Error('Invoice is void or cancelled — payment not permitted');
+            }
+            throw new Error('Unable to validate payment token');
+          }
+
+          const data = await response.json();
+
+          if (!data.ok || !data.token) {
+            throw new Error(data.error || 'Invalid token response');
+          }
+
+          displayInvoiceDetails(data.token, data.invoice, data.request);
+
+          // Enable pay button
+          payBtn.disabled = false;
+
+        } catch (err) {
+          console.error('Payment portal error:', err);
+          showError('Unable to Load Payment', err.message, 'Please try again or contact support if the problem persists.');
+        } finally {
+          loadingOverlay.classList.add('hidden');
+        }
+      }
+
+      function displayInvoiceDetails(token, invoice, request) {
+        // Update header
+        portalInvoiceNumber.textContent = invoice.invoice_number || invoice.invoice_id;
+
+        // Update invoice summary
+        invNumber.textContent = invoice.invoice_number || invoice.invoice_id;
+        invId.textContent = invoice.invoice_id;
+        invPaymentRef.textContent = request.request_id;
+
+        if (invoice.due_date) {
+          const dueDate = new Date(invoice.due_date);
+          invDueDate.textContent = dueDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        const amount = request.amount_requested || token.amount;
+        invAmount.textContent = formatCurrency(amount, token.currency || 'GBP');
+      }
+
+      function formatCurrency(amount, currency) {
+        return new Intl.NumberFormat('en-GB', {
+          style: 'currency',
+          currency: currency,
+          minimumFractionDigits: 2
+        }).format(amount);
+      }
+
+      async function handlePayClick() {
+        if (!paymentToken) return;
+
+        payBtn.disabled = true;
+        payBtnText.classList.add('hidden');
+        payBtnLoading.classList.remove('hidden');
+        loadingOverlay.classList.remove('hidden');
+
+        try {
+          const response = await fetch('/api/payment/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: paymentToken })
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to create checkout session');
+          }
+
+          const data = await response.json();
+
+          if (!data.ok || !data.checkout_url) {
+            throw new Error(data.error || 'No checkout URL returned');
+          }
+
+          checkoutUrl = data.checkout_url;
+
+          // Redirect to Stripe Checkout
+          window.location.href = checkoutUrl;
+
+        } catch (err) {
+          console.error('Checkout error:', err);
+          payBtn.disabled = false;
+          payBtnText.classList.remove('hidden');
+          payBtnLoading.classList.add('hidden');
+          loadingOverlay.classList.add('hidden');
+          showError('Checkout Failed', err.message, 'Please try again or contact support.');
+        }
+      }
+
+      function showSuccessState(sessionId) {
+        loadingOverlay.classList.add('hidden');
+        mainContainer.classList.add('hidden');
+        successContainer.classList.remove('hidden');
+
+        // In production, fetch session details from server
+        // For now, show from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const invoiceNumber = urlParams.get('invoice') || 'NX-INV-2026-0001';
+        const amount = urlParams.get('amount') || '2040';
+
+        successInvoiceNumber.textContent = invoiceNumber;
+        successAmount.textContent = formatCurrency(parseFloat(amount), 'GBP');
+        successStatus.textContent = 'Processing';
+        successStatus.className = 'payment-portal__status payment-portal__status--active';
+      }
+
+      function showError(title, message, detail) {
+        loadingOverlay.classList.add('hidden');
+        mainContainer.classList.add('hidden');
+        successContainer.classList.add('hidden');
+        errorContainer.classList.remove('hidden');
+        errorTitle.textContent = title;
+        errorMessage.textContent = message;
+        errorDetail.textContent = detail;
+      }
+
+      // Event listeners
+      payBtn.addEventListener('click', handlePayClick);
+      cancelBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = '/';
+      });
+
+      // Initialize
+      init();
+    })();
+  </script>
+</body>
+</html>

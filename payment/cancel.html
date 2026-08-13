@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Canceled — Nexora</title>
+  <meta name="description" content="Payment was canceled">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,300&family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/site.css">
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <style>
+    .payment-portal { max-width: 720px; margin: 0 auto; padding: var(--space-8) var(--space-4); }
+    .payment-portal__header { text-align: center; margin-bottom: var(--space-8); }
+    .payment-portal__eyebrow { color: var(--gold); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; font-size: var(--text-sm); margin-bottom: var(--space-2); }
+    .payment-portal__title { font-family: var(--font-heading); font-size: clamp(var(--text-3xl), 5vw, var(--text-4xl)); font-weight: 500; line-height: 1.2; color: var(--text); margin-bottom: var(--space-3); }
+    .payment-portal__subtitle { font-size: var(--text-lg); color: var(--muted); line-height: 1.6; }
+
+    .invoice-summary { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-6); }
+    .invoice-summary__row { display: flex; justify-content: space-between; align-items: center; padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+    .invoice-summary__row:last-child { border-bottom: none; }
+    .invoice-summary__label { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--muted); }
+    .invoice-summary__value { font-weight: 600; color: var(--text); text-align: right; }
+    .invoice-summary__total { font-size: var(--text-2xl); font-family: var(--font-heading); color: var(--gold); }
+
+    .payment-portal__notice { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-4); font-size: var(--text-sm); color: var(--muted); line-height: 1.6; }
+    .payment-portal__notice strong { color: var(--text); }
+    .payment-portal__notice--info { border-color: #bfdbfe; background: #eff6ff; color: #1e40af; }
+    .payment-portal__notice--info strong { color: #1e40af; }
+
+    .payment-portal__status { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-full); font-size: var(--text-sm); font-weight: 500; font-family: var(--font-mono); }
+    .payment-portal__status--canceled { background: #fef3c7; color: #92400e; }
+
+    .payment-portal__actions { display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-8); }
+    .btn-portal { width: 100%; padding: var(--space-4) var(--space-6); font-size: var(--text-lg); font-weight: 600; }
+
+    @media (min-width: 640px) {
+      .payment-portal__actions { flex-direction: row; }
+      .btn-portal { width: auto; flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header" role="banner">
+    <div class="wrap site-header__inner">
+      <a href="/" class="site-header__logo" aria-label="Nexora Creative Studio — Home">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="currentColor"/>
+          <path d="M8 12h16M8 16h12M8 20h8" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <span>Nexora</span>
+      </a>
+      <nav class="site-header__nav" aria-label="Main navigation">
+        <a href="/" class="site-header__link">Home</a>
+        <a href="/platform/" class="site-header__link">Platform</a>
+        <a href="/results/" class="site-header__link">Results</a>
+        <a href="/luxury-clinic-websites/" class="site-header__link">Websites</a>
+        <a href="/contact/" class="btn btn-primary site-header__cta">Start a project</a>
+      </nav>
+      <button class="site-header__menu-btn" aria-expanded="false" aria-controls="mobile-menu" aria-label="Toggle menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="site-header__mobile" id="mobile-menu" hidden>
+      <nav class="site-header__mobile-nav">
+        <a href="/" class="site-header__mobile-link">Home</a>
+        <a href="/platform/" class="site-header__mobile-link">Platform</a>
+        <a href="/results/" class="site-header__mobile-link">Results</a>
+        <a href="/luxury-clinic-websites/" class="site-header__mobile-link">Websites</a>
+        <a href="/contact/" class="btn btn-primary site-header__mobile-cta">Start a project</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="payment-portal">
+    <div class="payment-portal__header">
+      <span class="payment-portal__eyebrow">Payment Canceled</span>
+      <h1 class="payment-portal__title">You Returned Without Completing Payment</h1>
+      <p class="payment-portal__subtitle">No payment was processed. Your invoice remains unpaid and you can try again at any time using the same payment link.</p>
+    </div>
+
+    <div class="invoice-summary">
+      <div class="invoice-summary__row">
+        <span class="invoice-summary__label">Invoice</span>
+        <span class="invoice-summary__value" id="invoice-number">NX-INV-2026-0001</span>
+      </div>
+      <div class="invoice-summary__row">
+        <span class="invoice-summary__label">Amount</span>
+        <span class="invoice-summary__value invoice-summary__total" id="amount">£2,040.00</span>
+      </div>
+      <div class="invoice-summary__row">
+        <span class="invoice-summary__label">Status</span>
+        <span class="invoice-summary__value">
+          <span class="payment-portal__status payment-portal__status--canceled">Canceled</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="payment-portal__notice payment-portal__notice--info">
+      <strong>Your payment link is still valid.</strong> You can return to the payment portal and try again. The link expires in 7 days from when it was issued.
+    </div>
+
+    <div class="payment-portal__notice">
+      <strong>Common reasons for cancellation:</strong>
+      <ul style="margin: var(--space-3) 0 0 var(--space-4); padding-left: var(--space-4);">
+        <li>You clicked "Cancel" or closed the Stripe Checkout window</li>
+        <li>Your session timed out (30 minutes of inactivity)</li>
+        <li>You navigated away before completing payment</li>
+      </ul>
+    </div>
+
+    <div class="payment-portal__actions">
+      <a href="/payment/?token=" class="btn btn-primary btn-portal" id="retry-btn">Return to Payment Portal</a>
+      <a href="/contact/" class="btn btn-ghost btn-portal">Contact Support</a>
+    </div>
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="wrap site-footer__inner">
+      <div class="site-footer__brand">
+        <a href="/" class="site-footer__logo" aria-label="Nexora Creative Studio — Home">
+          <svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <rect width="32" height="32" rx="8" fill="currentColor"/>
+            <path d="M8 12h16M8 16h12M8 20h8" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          <span>Nexora</span>
+        </a>
+        <p class="site-footer__tagline">AI Receptionist &amp; Growth Automation for UK Aesthetic Clinics</p>
+      </div>
+      <nav class="site-footer__nav" aria-label="Footer navigation">
+        <div class="site-footer__column">
+          <h4>Platform</h4>
+          <ul>
+            <li><a href="/platform/ai-receptionist/">AI Receptionist</a></li>
+            <li><a href="/platform/ai-crm/">AI CRM</a></li>
+            <li><a href="/platform/analytics/">Analytics</a></li>
+            <li><a href="/platform/automations/">Automations</a></li>
+            <li><a href="/platform/lead-reactivation/">Lead Reactivation</a></li>
+            <li><a href="/platform/patient-journey/">Patient Journey</a></li>
+            <li><a href="/platform/knowledge-base/">Knowledge Base</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__column">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="/results/">Results</a></li>
+            <li><a href="/luxury-clinic-websites/">Websites</a></li>
+            <li><a href="/contact/">Contact</a></li>
+          </ul>
+        </div>
+        <div class="site-footer__column">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="/privacy.html">Privacy Policy</a></li>
+            <li><a href="/terms.html">Terms of Service</a></li>
+            <li><a href="/cookies.html">Cookie Policy</a></li>
+          </ul>
+        </div>
+      </nav>
+      <div class="site-footer__bottom">
+        <p class="site-footer__copyright">&copy; 2026 Nexora Creative Studio. All rights reserved.</p>
+        <p class="site-footer__registered">Registered in England &amp; Wales. Company No. 12345678</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../assets/js/nav.js"></script>
+  <script>
+    (function() {
+      'use strict';
+
+      // Parse URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const invoiceNumber = urlParams.get('invoice') || 'NX-INV-2026-0001';
+      const amount = urlParams.get('amount') || '2040';
+      const token = urlParams.get('token');
+
+      // Update display
+      document.getElementById('invoice-number').textContent = invoiceNumber;
+      document.getElementById('amount').textContent = new Intl.NumberFormat('en-GB', {
+        style: 'currency',
+        currency: 'GBP',
+        minimumFractionDigits: 2
+      }).format(parseFloat(amount));
+
+      // Update retry button link
+      const retryBtn = document.getElementById('retry-btn');
+      if (token) {
+        retryBtn.href = '/payment/?token=' + encodeURIComponent(token);
+      }
+    })();
+  </script>
+</body>
+</html>
