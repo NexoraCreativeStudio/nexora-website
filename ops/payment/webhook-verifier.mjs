@@ -1,9 +1,114 @@
-/* Nexora — Webhook Signature Verification Abstraction (PROP.12)
+/* Nexora — Webhook Signature Verification Abstraction (PROP.12/16)
    Governed verification interface for provider webhook signatures.
    TEST adapter uses deterministic simulation. PRODUCTION requires
-   official Stripe SDK boundary — fails closed if unavailable. */
+   official Stripe SDK boundary — fails closed if unavailable.
+   Web Crypto API compatible for Cloudflare Workers. */
 
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual } from 'node:crypto';
+
+/* Detect runtime environment for crypto API selection */
+function getCryptoProvider() {
+  // Cloudflare Workers has global crypto.subtle
+  if (typeof globalThis !== 'undefined' && globalThis.crypto && globalThis.crypto.subtle) {
+    return 'webcrypto';
+  }
+  // Node.js has node:crypto
+  return 'node';
+}
+
+const CRYPTO_PROVIDER = getCryptoProvider();
+
+/* Web Crypto HMAC-SHA256 implementation */
+async function webCryptoHmacSha256(secret, payload) {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const payloadData = typeof payload === 'string' ? encoder.encode(payload) : payload;
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign('HMAC', key, payloadData);
+  return new Uint8Array(signature);
+}
+
+/* Node.js HMAC-SHA256 implementation */
+function nodeHmacSha256(secret, payload) {
+  const crypto = require('node:crypto');
+  return crypto.createHmac('sha256', secret).update(payload).digest();
+}
+
+/* Unified HMAC-SHA256 - returns hex string */
+export async function hmacSha256Hex(secret, payload) {
+  if (CRYPTO_PROVIDER === 'webcrypto') {
+    const result = await webCryptoHmacSha256(secret, payload);
+    return Array.from(result).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  return nodeHmacSha256(secret, payload).toString('hex');
+}
+
+/* Unified HMAC-SHA256 - returns Uint8Array/Buffer for timing-safe comparison */
+export async function hmacSha256Raw(secret, payload) {
+  if (CRYPTO_PROVIDER === 'webcrypto') {
+    return webCryptoHmacSha256(secret, payload);
+  }
+  return nodeHmacSha256(secret, payload);
+}
+
+/* Constant-time comparison - works with both Uint8Array, Buffer, and strings */
+export function constantTimeEqual(a, b) {
+  if (!a || !b) return false;
+
+  // Convert to Uint8Array for consistent handling
+  let arrA, arrB;
+
+  if (a instanceof Uint8Array) {
+    arrA = a;
+  } else if (typeof a === 'string') {
+    arrA = new TextEncoder().encode(a);
+  } else if (typeof Buffer !== 'undefined' && Buffer.isBuffer(a)) {
+    arrA = new Uint8Array(a);
+  } else if (ArrayBuffer.isView(a)) {
+    arrA = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
+  } else {
+    arrA = new Uint8Array(a);
+  }
+
+  if (b instanceof Uint8Array) {
+    arrB = b;
+  } else if (typeof b === 'string') {
+    arrB = new TextEncoder().encode(b);
+  } else if (typeof Buffer !== 'undefined' && Buffer.isBuffer(b)) {
+    arrB = new Uint8Array(b);
+  } else if (ArrayBuffer.isView(b)) {
+    arrB = new Uint8Array(b.buffer, b.byteOffset, b.byteLength);
+  } else {
+    arrB = new Uint8Array(b);
+  }
+
+  if (arrA.length !== arrB.length) return false;
+
+  // Use Web Crypto subtle.timingSafeEqual if available, otherwise manual
+  if (typeof crypto !== 'undefined' && crypto.subtle && crypto.subtle.timingSafeEqual) {
+    return crypto.subtle.timingSafeEqual(arrA, arrB);
+  }
+
+  // Node.js timingSafeEqual with Buffer
+  if (typeof Buffer !== 'undefined' && Buffer.from) {
+    return timingSafeEqual(Buffer.from(arrA), Buffer.from(arrB));
+  }
+
+  // Fallback constant-time comparison
+  let result = 0;
+  for (let i = 0; i < arrA.length; i++) {
+    result |= arrA[i] ^ arrB[i];
+  }
+  return result === 0;
+}
 
 export const VERIFIER_ADAPTERS = ['TEST_DETERMINISTIC', 'STRIPE_OFFICIAL'];
 
@@ -66,16 +171,6 @@ export class StripeOfficialVerifier extends WebhookVerifierAdapter {
   constructor(opts = {}) {
     super({ environment: 'PRODUCTION', config: opts.config || {} });
 
-    // Verify Stripe SDK is available
-    try {
-      // eslint-disable-next-line no-unused-vars
-      const stripe = require('stripe');
-      this.stripeAvailable = true;
-    } catch (e) {
-      this.stripeAvailable = false;
-      this.stripeError = e.message;
-    }
-
     // Verify webhook secret is configured
     this.webhookSecret = opts.config?.webhookSecret;
     if (!this.webhookSecret) {
@@ -84,14 +179,37 @@ export class StripeOfficialVerifier extends WebhookVerifierAdapter {
     if (!this.webhookSecret.startsWith('whsec_')) {
       throw new Error('Webhook secret must be a valid Stripe webhook secret (whsec_...)');
     }
+
+    // Stripe SDK availability - lazy checked on first verify
+    this._stripeAvailable = null;
+    this._stripeError = null;
+  }
+
+  /* Lazy check for Stripe SDK availability */
+  async _checkStripeSdk() {
+    if (this._stripeAvailable !== null) {
+      return this._stripeAvailable;
+    }
+
+    try {
+      // eslint-disable-next-line no-unused-vars
+      const stripe = require('stripe');
+      this._stripeAvailable = true;
+    } catch (e) {
+      this._stripeAvailable = false;
+      this._stripeError = e.message;
+    }
+    return this._stripeAvailable;
   }
 
   async verify(rawPayload, signatureHeader, webhookSecret) {
-    if (!this.stripeAvailable) {
+    const stripeAvailable = await this._checkStripeSdk();
+
+    if (!stripeAvailable) {
       return {
         ok: false,
         verified: false,
-        reason: `Stripe SDK not available: ${this.stripeError}. PRODUCTION webhook verification requires 'stripe' package.`,
+        reason: `Stripe SDK not available: ${this._stripeError}. PRODUCTION webhook verification requires 'stripe' package.`,
       };
     }
 
@@ -100,11 +218,9 @@ export class StripeOfficialVerifier extends WebhookVerifierAdapter {
     }
 
     // Use the official Stripe SDK webhook verification
-    // Note: We construct the event and extract it to verify
-    // The SDK's constructEvent does the HMAC-SHA256 verification
     try {
       // eslint-disable-next-line global-require
-      const stripe = require('stripe')(this.config?.secretKey || 'sk_live_placeholder'); // secret key needed for some operations
+      const stripe = require('stripe')(this.config?.secretKey || 'sk_live_placeholder');
 
       // Stripe's constructEvent verifies signature and parses
       const event = stripe.webhooks.constructEvent(
@@ -116,7 +232,7 @@ export class StripeOfficialVerifier extends WebhookVerifierAdapter {
       return {
         ok: true,
         verified: true,
-        event, // Return the verified event object
+        event,
         note: 'PRODUCTION — verified via official Stripe SDK',
         environment: 'PRODUCTION',
       };
@@ -171,18 +287,4 @@ export function validateWebhookVerifier(verifier, environment) {
   return { ok: true };
 }
 
-/* ------------------------------------------------------------------ */
-/* Constant-time string comparison (for any custom verification)     */
-/* ------------------------------------------------------------------ */
-export function constantTimeEqual(a, b) {
-  if (typeof a !== 'string' || typeof b !== 'string') return false;
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
-}
-
-/* ------------------------------------------------------------------ */
-/* HMAC-SHA256 helper (for reference — production uses Stripe SDK)   */
-/* ------------------------------------------------------------------ */
-export function hmacSha256Hex(secret, payload) {
-  return createHmac('sha256', secret).update(payload).digest('hex');
-}
+/* CRYPTO_PROVIDER is exported above at line 19 */

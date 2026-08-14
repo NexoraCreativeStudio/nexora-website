@@ -3,6 +3,25 @@
    TEST/SANDBOX-FIRST — no live calls, no live keys.
    Architecture remains provider-neutral for future PayPal support. */
 
+/* Lazy Stripe SDK loading - avoids bundling in Workers test/staging environments */
+let _stripeSdk = null;
+let _stripeSdkError = null;
+
+async function getStripeSdk() {
+  if (_stripeSdk !== null || _stripeSdkError !== null) {
+    if (_stripeSdkError) throw new Error(_stripeSdkError);
+    return _stripeSdk;
+  }
+  try {
+    // eslint-disable-next-line global-require
+    _stripeSdk = require('stripe');
+    return _stripeSdk;
+  } catch (e) {
+    _stripeSdkError = e.message;
+    throw new Error(`Stripe SDK not available: ${e.message}`);
+  }
+}
+
 import { createHash } from 'node:crypto';
 import {
   PAYMENT_REQUEST_SCHEMA,
@@ -110,8 +129,37 @@ export class StripeAdapter {
       };
     }
 
-    // PRODUCTION PATH — requires server-side Stripe SDK and live keys (not implemented here)
-    throw new Error('PRODUCTION createCheckoutSession requires server-side Stripe SDK with live keys');
+    // PRODUCTION PATH — requires server-side Stripe SDK (lazy loaded)
+    try {
+      const stripe = await getStripeSdk();
+      const stripeClient = stripe(this.config?.secretKey);
+
+      const session = await stripeClient.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: paymentRequest.currency.toLowerCase(),
+            product_data: {
+              name: `Invoice ${paymentRequest.invoice_number || paymentRequest.invoice_id}`,
+              description: `Payment for ${paymentRequest.invoice_id} — Nexora services`,
+            },
+            unit_amount: amountMinor,
+          },
+          quantity: 1,
+        }],
+        mode: 'payment',
+        success_url: this.config?.success_url,
+        cancel_url: this.config?.cancel_url,
+        metadata,
+        payment_intent_data: { metadata },
+        client_reference_id: this.config?.clientReferenceId,
+        idempotency_key: idempotencyKey,
+      });
+
+      return session;
+    } catch (err) {
+      throw new Error(`PRODUCTION createCheckoutSession failed: ${err.message}`);
+    }
   }
 
   /* Create a Stripe Payment Intent (alternative to Checkout for embedded flows) */
@@ -139,7 +187,22 @@ export class StripeAdapter {
       };
     }
 
-    throw new Error('PRODUCTION createPaymentIntent requires server-side Stripe SDK with live keys');
+    // PRODUCTION PATH — requires server-side Stripe SDK (lazy loaded)
+    try {
+      const stripe = await getStripeSdk();
+      const stripeClient = stripe(this.config?.secretKey);
+
+      const intent = await stripeClient.paymentIntents.create({
+        amount: amountMinor,
+        currency: paymentRequest.currency.toLowerCase(),
+        metadata,
+        idempotency_key: idempotencyKey,
+      });
+
+      return intent;
+    } catch (err) {
+      throw new Error(`PRODUCTION createPaymentIntent failed: ${err.message}`);
+    }
   }
 
   /* Retrieve Payment Intent status */
@@ -230,14 +293,38 @@ export class StripeAdapter {
   }
 
   /* Verify Stripe webhook signature — MUST be called before normalizeWebhookEvent */
-  verifyWebhookSignature(rawPayload, signatureHeader, webhookSecret) {
+  async verifyWebhookSignature(rawPayload, signatureHeader, webhookSecret) {
     if (this.environment !== 'PRODUCTION') {
       // TEST MODE: deterministic simulation — always returns verified for valid test events
       return { ok: true, verified: true, note: 'TEST MODE — signature verification simulated' };
     }
 
-    // PRODUCTION: requires Stripe SDK
-    throw new Error('PRODUCTION verifyWebhookSignature requires server-side Stripe SDK');
+    // PRODUCTION: requires Stripe SDK (lazy loaded)
+    try {
+      const stripe = await getStripeSdk();
+      const stripeClient = stripe(this.config?.secretKey || 'sk_live_PLACEHOLDER');
+
+      const event = stripeClient.webhooks.constructEvent(
+        rawPayload,
+        signatureHeader,
+        webhookSecret
+      );
+
+      return {
+        ok: true,
+        verified: true,
+        event,
+        note: 'PRODUCTION — verified via official Stripe SDK (lazy loaded)',
+        environment: 'PRODUCTION',
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        verified: false,
+        reason: `Stripe signature verification failed: ${err.message}`,
+        environment: 'PRODUCTION',
+      };
+    }
   }
 
   /* Refund a payment */
