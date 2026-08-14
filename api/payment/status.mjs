@@ -1,54 +1,95 @@
-/* Nexora — Payment Status API (PROP.12)
+/* Nexora — Payment Status API (PROP.14)
    GET /api/payment/status/:session_id
-   Returns the governed status of a payment portal session.
-   Does NOT mark PAID on redirect — only PROP.9 reconciliation does.
-   Uses governed storage abstraction (runtime-storage.mjs) for persistence. */
+   Deployment-ready: TEST/SANDBOX/STAGING_TEST modes.
+   Safe error contract, structured logging, environment-aware storage,
+   CORS from config, request limits. */
 
-import { createHash } from 'crypto';
 import { join } from 'path';
+import { buildConfigFromEnv, validateDeploymentConfig, DEPLOYMENT_ENVIRONMENTS } from '../../ops/payment/deployment-config.mjs';
 import { createStorageAdapter } from '../../ops/payment/runtime-storage.mjs';
+import { createBoundProductionStorageAdapter } from '../../ops/payment/shared-storage-binding.mjs';
+import { parseJsonBody, setSafeResponseHeaders, handlePreflight, validateSessionId, sendErrorResponse, ERROR_CODES, validateQueryParam } from './request-limits.mjs';
+import { getDefaultLogger } from '../../ops/payment/structured-logging.mjs';
+import { generateCorrelationId } from '../../ops/payment/structured-logging.mjs';
 
 const OPS_DIR = join(process.cwd(), 'ops');
 const PAYMENT_DIR = join(OPS_DIR, 'payment');
-const OUT_DIR = join(PAYMENT_DIR, 'out');
 
-/* Governed storage adapter (TEST mode uses deterministic file storage) */
-const storage = createStorageAdapter({ environment: 'TEST', config: { baseDir: join(PAYMENT_DIR, 'private', 'test-runtime') } });
+const logger = getDefaultLogger();
 
-async function getPortalSession(sessionId) {
-  // Check governed storage
+async function getPortalSession(storage, sessionId) {
   return await storage.getSession(sessionId);
 }
 
-/* Main handler */
 export default async function handler(req, res) {
-  const { readFileSync, existsSync } = await import('fs');
-  const { join } = await import('path');
+  const correlationId = req.headers['x-correlation-id'] || req.headers['x-request-id'] || generateCorrelationId();
+  req.correlationId = correlationId;
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Safe headers
+  setSafeResponseHeaders(res, correlationId);
+
+  // CORS from config
+  const config = buildConfigFromEnv();
+  const origins = config.allowed_origins ? config.allowed_origins.split(',').map(o => o.trim()) : [];
+  const requestOrigin = req.headers.origin;
+  if (requestOrigin && origins.includes(requestOrigin)) {
+    res.setHeader('Access-Control-Allow-Origin', requestOrigin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Correlation-Id');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (handlePreflight(req, res)) return;
+
+  // Validate deployment config
+  const configValidation = validateDeploymentConfig(config);
+  if (!configValidation.ok) {
+    logger.logConfigValidation({
+      correlationId,
+      environment: config.environment,
+      valid: false,
+      reasons: configValidation.reasons,
+    });
+    return sendErrorResponse(res, ERROR_CODES.CONFIG_INVALID, correlationId, configValidation.reasons);
   }
 
-  if (req.method !== 'GET') {
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+  // Enforce STAGING_PAYMENT_ENABLED gate (read-only access allowed but session must exist)
+  if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST && !config.staging_payment_enabled) {
+    logger.logKillSwitch({
+      correlationId,
+      gate: 'STAGING_PAYMENT_ENABLED',
+      enabled: false,
+      action: 'status_read',
+    });
+    // Allow read for existing sessions, but log gate state
   }
 
+  // Validate session_id from query or path
   const sessionId = req.query.session_id || req.params?.session_id;
-
-  if (!sessionId || !/^PSS-[A-Za-z0-9_-]{43}$/.test(sessionId)) {
-    return res.status(400).json({ ok: false, error: 'Valid session_id required' });
+  const sessionValidation = validateSessionId(sessionId);
+  if (!sessionValidation.ok) {
+    return sendErrorResponse(res, sessionValidation.code, correlationId);
   }
 
   try {
-    const session = await getPortalSession(sessionId);
+    // Get storage adapter based on environment
+    const storage = config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST
+      ? createStorageAdapter({ environment: 'TEST', config: { baseDir: join(PAYMENT_DIR, 'private', 'test-runtime') } })
+      : createBoundProductionStorageAdapter(config);
+
+    const session = await getPortalSession(storage, sessionId);
 
     if (!session) {
-      return res.status(404).json({ ok: false, error: 'Session not found' });
+      logger.logSessionNotFound({ correlationId, sessionId });
+      return sendErrorResponse(res, ERROR_CODES.SESSION_NOT_FOUND, correlationId);
     }
+
+    // Log status check
+    logger.logStatusCheck({
+      correlationId,
+      sessionId: session.session_id,
+      status: session.status,
+      paymentRequestId: session.payment_request_id,
+    });
 
     // Return safe session status
     return res.status(200).json({
@@ -70,18 +111,26 @@ export default async function handler(req, res) {
         failure_reason: session.failure_reason,
         audit_events: session.audit_events?.slice(-5), // Last 5 events
       },
-      _test_only: true,
+      environment: config.environment,
+      stripe_mode: config.stripe_mode,
+      _test_only: config.environment !== DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED || config.stripe_mode !== 'LIVE',
     });
 
   } catch (err) {
-    console.error('Status endpoint error:', err);
-    return res.status(500).json({ ok: false, error: 'Internal server error' });
+    logger.logError({
+      correlationId,
+      error_code: 'STATUS_CHECK_FAILED',
+      message: err.message,
+      context: 'status_endpoint',
+    });
+
+    return sendErrorResponse(res, ERROR_CODES.INTERNAL_ERROR, correlationId);
   }
 }
 
 /* For local testing */
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const testReq = { method: 'GET', query: { session_id: 'PSS-dnqeauWAoxwvhUFCWsb-iKrBcR9sjCMlrtfY0EuFxss' } };
+  const testReq = { method: 'GET', query: { session_id: 'PSS-dnqeauWAoxwvhUFCWsb-iKrBcR9sjCMlrtfY0EuFxss' }, headers: {}, params: {} };
   const testRes = {
     statusCode: 200,
     headers: {},

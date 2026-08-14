@@ -1,13 +1,13 @@
-/* Nexora — Stripe TEST Webhook Endpoint (PROP.12)
+/* Nexora — Stripe Webhook Endpoint (PROP.14)
    POST /api/payment/webhook
-   Handles Stripe webhook events, verifies signatures via governed verifier,
-   normalizes to governed webhook record, triggers PROP.9 reconciliation.
-   TEST/SANDBOX only — no LIVE credentials.
-   Uses governed storage abstraction (runtime-storage.mjs) and webhook verifier (webhook-verifier.mjs). */
+   Deployment-ready: STAGING_TEST mode with TEST/SANDBOX webhooks.
+   Raw body adapter for exact-byte signature verification,
+   shared storage, structured logging, governed reconciliation,
+   idempotency, environment gates. */
 
-import { createHash } from 'crypto';
 import { join } from 'path';
-import { StripeTestAdapter, StripeAdapter, STRIPE_RECONCILIATION_EVENT_TYPES } from '../../ops/payment/stripe-adapter.mjs';
+import { buildConfigFromEnv, validateDeploymentConfig, DEPLOYMENT_ENVIRONMENTS } from '../../ops/payment/deployment-config.mjs';
+import { StripeTestAdapter, StripeAdapter, STRIPE_RECONCILIATION_EVENT_TYPES, STRIPE_PROVIDER_ID } from '../../ops/payment/stripe-adapter.mjs';
 import {
   RECONCILIATION_SCHEMA,
   PAYMENT_SCHEMA,
@@ -19,32 +19,19 @@ import {
 } from '../../ops/payment/payment-validation.mjs';
 import { markWebhookReceived, markReconciled } from '../../ops/payment/portal-session.mjs';
 import { createStorageAdapter } from '../../ops/payment/runtime-storage.mjs';
+import { createBoundProductionStorageAdapter } from '../../ops/payment/shared-storage-binding.mjs';
 import { createWebhookVerifier } from '../../ops/payment/webhook-verifier.mjs';
+import { parseRawBody, setSafeResponseHeaders, handlePreflight, sendErrorResponse, ERROR_CODES } from './request-limits.mjs';
+import { getDefaultLogger } from '../../ops/payment/structured-logging.mjs';
+import { generateCorrelationId } from '../../ops/payment/structured-logging.mjs';
 
 const OPS_DIR = join(process.cwd(), 'ops');
 const PAYMENT_DIR = join(OPS_DIR, 'payment');
-const OUT_DIR = join(PAYMENT_DIR, 'out');
 
-/* Governed storage adapter (TEST mode uses deterministic file storage) */
-const storage = createStorageAdapter({ environment: 'TEST', config: { baseDir: join(PAYMENT_DIR, 'private', 'test-runtime') } });
-
-/* Governed webhook verifier (TEST mode uses deterministic simulation) */
-const verifier = createWebhookVerifier({ environment: 'TEST', config: {} });
-
-/* Get raw body for signature verification */
-async function getRawBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    req.on('data', chunk => chunks.push(chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks)));
-    req.on('error', reject);
-  });
-}
+const logger = getDefaultLogger();
 
 /* Trigger PROP.9 reconciliation */
 async function triggerReconciliation(webhookEvent, paymentRecord) {
-  const { TestPaymentAdapter } = await import('../../ops/payment/payment-validation.mjs');
-
   const adapter = new TestPaymentAdapter();
   const result = adapter.reconcilePayment(webhookEvent, {
     invoice: { invoice_id: webhookEvent.invoice_id, amount_requested: webhookEvent.amount, currency: webhookEvent.currency },
@@ -55,72 +42,116 @@ async function triggerReconciliation(webhookEvent, paymentRecord) {
   return result;
 }
 
-/* Main handler */
 export default async function handler(req, res) {
-  const { readFileSync, existsSync, writeFileSync, mkdirSync } = await import('fs');
-  const { join } = await import('path');
+  const correlationId = req.headers['x-correlation-id'] || req.headers['x-request-id'] || generateCorrelationId();
+  req.correlationId = correlationId;
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Safe headers
+  setSafeResponseHeaders(res, correlationId);
+
+  // CORS from config
+  const config = buildConfigFromEnv();
+  const origins = config.allowed_origins ? config.allowed_origins.split(',').map(o => o.trim()) : [];
+  const requestOrigin = req.headers.origin;
+  if (requestOrigin && origins.includes(requestOrigin)) {
+    res.setHeader('Access-Control-Allow-Origin', requestOrigin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Stripe-Signature');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Stripe-Signature, X-Correlation-Id');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (handlePreflight(req, res)) return;
+
+  // Validate deployment config
+  const configValidation = validateDeploymentConfig(config);
+  if (!configValidation.ok) {
+    logger.logConfigValidation({
+      correlationId,
+      environment: config.environment,
+      valid: false,
+      reasons: configValidation.reasons,
+    });
+    return sendErrorResponse(res, ERROR_CODES.CONFIG_INVALID, correlationId, configValidation.reasons);
   }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+  // Enforce STAGING_PAYMENT_ENABLED gate
+  if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST && !config.staging_payment_enabled) {
+    logger.logKillSwitch({
+      correlationId,
+      gate: 'STAGING_PAYMENT_ENABLED',
+      enabled: false,
+      action: 'webhook_blocked',
+    });
+    return sendErrorResponse(res, ERROR_CODES.STAGING_PAYMENTS_DISABLED, correlationId);
+  }
+
+  // Parse raw body with size limit (exact bytes for signature verification)
+  let rawBody;
+  try {
+    rawBody = await parseRawBody(req, config.max_raw_webhook_size);
+  } catch (err) {
+    return sendErrorResponse(res, err.code, correlationId);
+  }
+
+  const signatureHeader = req.headers['stripe-signature'] || req.headers['Stripe-Signature'];
+  if (!signatureHeader) {
+    logger.logWebhookSignatureMissing({ correlationId });
+    return sendErrorResponse(res, ERROR_CODES.WEBHOOK_SIGNATURE_INVALID, correlationId);
+  }
+
+  // Parse JSON from raw body
+  let stripeEvent;
+  try {
+    stripeEvent = JSON.parse(rawBody.toString('utf8'));
+  } catch (e) {
+    logger.logWebhookPayloadInvalid({ correlationId, error: e.message });
+    return sendErrorResponse(res, ERROR_CODES.WEBHOOK_PAYLOAD_INVALID, correlationId);
+  }
+
+  // Verify signature via governed webhook verifier
+  const verifier = createWebhookVerifier({ environment: config.environment, config });
+  const sigResult = await verifier.verify(rawBody.toString('utf8'), signatureHeader, config.stripe_webhook_secret);
+  if (!sigResult.verified) {
+    logger.logWebhookSignatureInvalid({ correlationId, reason: sigResult.reason });
+    return sendErrorResponse(res, ERROR_CODES.WEBHOOK_SIGNATURE_INVALID, correlationId);
+  }
+
+  // Check event type is supported
+  if (!STRIPE_RECONCILIATION_EVENT_TYPES.includes(stripeEvent.type)) {
+    logger.logWebhookUnsupportedEvent({ correlationId, eventType: stripeEvent.type });
+    return res.status(200).json({ ok: true, received: true, ignored: true, reason: 'Unsupported event type' });
+  }
+
+  // Normalize webhook event using StripeAdapter
+  const stripeAdapter = config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST
+    ? new StripeTestAdapter()
+    : new StripeAdapter({ environment: config.stripe_mode === 'LIVE' ? 'PRODUCTION' : 'TEST' });
+
+  const normalized = stripeAdapter.normalizeWebhookEvent(stripeEvent, { signatureVerified: true });
+  if (!normalized.ok) {
+    logger.logWebhookNormalizationFailed({ correlationId, reasons: normalized.reasons });
+    return sendErrorResponse(res, ERROR_CODES.WEBHOOK_PAYLOAD_INVALID, correlationId, normalized.reasons);
+  }
+
+  const webhookEvent = normalized.event;
+  webhookEvent.signature_verified = true;
+
+  // Validate webhook contract
+  if (webhookEvent.environment !== config.environment) {
+    logger.logWebhookEnvironmentMismatch({ correlationId, expected: config.environment, actual: webhookEvent.environment });
+    return sendErrorResponse(res, ERROR_CODES.WEBHOOK_ENVIRONMENT_MISMATCH, correlationId);
+  }
+
+  // Check for required metadata lineage
+  if (!webhookEvent.payment_request_id || !webhookEvent.invoice_id) {
+    logger.logWebhookMissingLineage({ correlationId });
+    return sendErrorResponse(res, ERROR_CODES.WEBHOOK_MISSING_LINEAGE, correlationId);
   }
 
   try {
-    // Get raw body for signature verification
-    const rawBody = await getRawBody(req);
-    const signatureHeader = req.headers['stripe-signature'] || req.headers['Stripe-Signature'];
-
-    // Parse JSON
-    let stripeEvent;
-    try {
-      stripeEvent = JSON.parse(rawBody.toString('utf8'));
-    } catch (e) {
-      return res.status(400).json({ ok: false, error: 'Invalid JSON payload' });
-    }
-
-    // Verify signature via governed webhook verifier
-    const sigResult = await verifier.verify(rawBody.toString('utf8'), signatureHeader, 'whsec_test');
-    if (!sigResult.verified) {
-      console.warn('Webhook signature verification failed:', sigResult.reason);
-      return res.status(400).json({ ok: false, error: 'Webhook signature verification failed' });
-    }
-
-    // Check event type is supported
-    if (!STRIPE_RECONCILIATION_EVENT_TYPES.includes(stripeEvent.type)) {
-      console.log('Ignoring unsupported event type:', stripeEvent.type);
-      return res.status(200).json({ ok: true, received: true, ignored: true, reason: 'Unsupported event type' });
-    }
-
-    // Normalize webhook event using StripeAdapter
-    const stripeAdapter = new StripeTestAdapter();
-    const normalized = stripeAdapter.normalizeWebhookEvent(stripeEvent, { signatureVerified: true });
-
-    if (!normalized.ok) {
-      console.error('Webhook normalization failed:', normalized.reasons);
-      return res.status(400).json({ ok: false, error: 'Webhook normalization failed', reasons: normalized.reasons });
-    }
-
-    const webhookEvent = normalized.event;
-    webhookEvent.signature_verified = true;
-
-    // Validate webhook contract (TEST mode version)
-    if (webhookEvent.environment !== 'TEST') {
-      console.error('Environment mismatch:', webhookEvent.environment);
-      return res.status(400).json({ ok: false, error: 'Environment mismatch' });
-    }
-
-    // Check for required metadata lineage
-    if (!webhookEvent.payment_request_id || !webhookEvent.invoice_id) {
-      console.error('Missing payment request or invoice ID in webhook metadata');
-      return res.status(400).json({ ok: false, error: 'Missing lineage metadata' });
-    }
+    // Get storage adapter
+    const storage = config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST
+      ? createStorageAdapter({ environment: 'TEST', config: { baseDir: join(PAYMENT_DIR, 'private', 'test-runtime') } })
+      : createBoundProductionStorageAdapter(config);
 
     // Find portal session via governed storage
     let portalSession = null;
@@ -128,17 +159,16 @@ export default async function handler(req, res) {
       portalSession = await storage.findSessionByCheckoutSessionId(webhookEvent.normalized_evidence.provider_ref);
     }
 
-    // Find or create payment record via governed storage
+    // Find or create payment record
     let paymentRecord = await storage.findPaymentByRequestId(webhookEvent.payment_request_id);
 
     if (!paymentRecord) {
-      // Build payment record from governed payment request
       const paymentBuild = buildPaymentRecord(
-        { request_id: webhookEvent.payment_request_id, invoice_id: webhookEvent.invoice_id, amount_requested: webhookEvent.amount, currency: webhookEvent.currency, environment: 'TEST' },
-        { example: true, createdAt: new Date().toISOString() }
+        { request_id: webhookEvent.payment_request_id, invoice_id: webhookEvent.invoice_id, amount_requested: webhookEvent.amount, currency: webhookEvent.currency, environment: config.environment },
+        { example: config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST, createdAt: new Date().toISOString() }
       );
       if (!paymentBuild.ok) {
-        return res.status(500).json({ ok: false, error: 'Failed to build payment record', reasons: paymentBuild.reasons });
+        return sendErrorResponse(res, ERROR_CODES.INTERNAL_ERROR, correlationId, paymentBuild.reasons);
       }
       paymentRecord = paymentBuild.payment;
       await storage.createPayment(paymentRecord);
@@ -147,15 +177,15 @@ export default async function handler(req, res) {
     // Check idempotency
     const idemCheck = await storage.checkIdempotency(webhookEvent.idempotency_key);
     if (idemCheck.exists) {
-      console.log('Duplicate webhook event detected (idempotency):', webhookEvent.idempotency_key);
+      logger.logWebhookDuplicate({ correlationId, idempotencyKey: webhookEvent.idempotency_key, eventId: webhookEvent.event_id });
       return res.status(200).json({ ok: true, received: true, duplicate: true, event_id: webhookEvent.event_id });
     }
 
     // Apply webhook event to payment record (evidence recording)
     const eventResult = applyPaymentEvent(paymentRecord, webhookEvent);
     if (!eventResult.ok) {
-      console.error('Failed to apply webhook event:', eventResult.reasons);
-      return res.status(400).json({ ok: false, error: 'Failed to record webhook evidence', reasons: eventResult.reasons });
+      logger.logWebhookApplicationFailed({ correlationId, reasons: eventResult.reasons });
+      return sendErrorResponse(res, ERROR_CODES.INTERNAL_ERROR, correlationId, eventResult.reasons);
     }
     paymentRecord = eventResult.payment;
     await storage.updatePayment(paymentRecord);
@@ -174,13 +204,11 @@ export default async function handler(req, res) {
       reconciliationResult = await triggerReconciliation(webhookEvent, paymentRecord);
 
       if (reconciliationResult.ok && reconciliationResult.reconciliation) {
-        // Apply reconciliation to payment record
         const reconApplied = applyReconciliation(paymentRecord, reconciliationResult.reconciliation);
         if (reconApplied.ok) {
           paymentRecord = reconApplied.payment;
           await storage.updatePayment(paymentRecord);
 
-          // Update portal session to reconciled
           if (portalSession && (reconciliationResult.reconciliation.outcome === 'EXACT' || reconciliationResult.reconciliation.outcome === 'PARTIAL')) {
             const reconciled = markReconciled(portalSession, reconciliationResult.reconciliation);
             if (reconciled.ok) {
@@ -195,15 +223,16 @@ export default async function handler(req, res) {
     await storage.setIdempotency(webhookEvent.idempotency_key, webhookEvent.event_id);
 
     // Log processing result
-    console.log('Webhook processed:', {
-      event_id: webhookEvent.event_id,
-      event_type: webhookEvent.event_type,
-      invoice_id: webhookEvent.invoice_id,
-      payment_request_id: webhookEvent.payment_request_id,
+    logger.logWebhookProcessed({
+      correlationId,
+      eventId: webhookEvent.event_id,
+      eventType: webhookEvent.event_type,
+      invoiceId: webhookEvent.invoice_id,
+      paymentRequestId: webhookEvent.payment_request_id,
       amount: webhookEvent.amount,
       currency: webhookEvent.currency,
-      payment_status: paymentRecord.status,
-      reconciliation_outcome: reconciliationResult?.reconciliation?.outcome || 'N/A',
+      paymentStatus: paymentRecord.status,
+      reconciliationOutcome: reconciliationResult?.reconciliation?.outcome || 'N/A',
     });
 
     return res.status(200).json({
@@ -212,22 +241,28 @@ export default async function handler(req, res) {
       event_id: webhookEvent.event_id,
       payment_status: paymentRecord.status,
       reconciliation_outcome: reconciliationResult?.reconciliation?.outcome || null,
-      _test_only: true,
+      environment: config.environment,
+      stripe_mode: config.stripe_mode,
+      _test_only: config.environment !== DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED || config.stripe_mode !== 'LIVE',
     });
 
   } catch (err) {
-    console.error('Webhook handler error:', err);
-    return res.status(500).json({ ok: false, error: 'Internal server error' });
+    logger.logError({
+      correlationId,
+      error_code: 'WEBHOOK_PROCESSING_FAILED',
+      message: err.message,
+      context: 'webhook_endpoint',
+    });
+
+    return sendErrorResponse(res, ERROR_CODES.INTERNAL_ERROR, correlationId);
   }
 }
 
 /* For local testing */
 if (import.meta.url === `file://${process.argv[1]}`) {
-  // Simulate a test webhook event
   const StripeTestAdapter = (await import('../../ops/payment/stripe-adapter.mjs')).StripeTestAdapter;
   const adapter = new StripeTestAdapter();
 
-  // Need a payment request
   const paymentRequest = {
     request_id: 'REQ-2026-9898-001',
     invoice_id: 'INV-2026-9898-001',
