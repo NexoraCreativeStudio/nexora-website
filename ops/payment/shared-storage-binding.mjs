@@ -1,9 +1,9 @@
-/* Nexora — Shared Storage Binding (PROP.14)
+/* Nexora — Shared Storage Binding (PROP.14/15)
    Provider-neutral runtime binding from environment/config to ProductionStorageAdapter.
    Fails closed if provider not configured. No vendor chosen without Owner decision. */
 
 import { SharedStorageClient, ProductionStorageAdapter, validateStorageAdapter } from './runtime-storage.mjs';
-import { validateDeploymentConfig, DEPLOYMENT_ENVIRONMENTS } from './deployment-config.mjs';
+import { validateDeploymentConfig, DEPLOYMENT_ENVIRONMENTS, validateConfigSecurity } from './deployment-config.mjs';
 
 /* Shared storage provider contract — all adapters must implement this */
 export const SHARED_STORAGE_PROVIDER_CONTRACT = {
@@ -20,7 +20,53 @@ export const SHARED_STORAGE_PROVIDER_CONTRACT = {
     'setIfAbsent',   // async setIfAbsent(key, value) -> { ok: true, created: true } | { ok: true, created: false } | { ok: false, reason }
     'listByPrefix',  // async listByPrefix(prefix) -> string[]
   ],
+
+  /* Concurrency guarantees required for payment idempotency */
+  concurrency: {
+    compareAndSet: 'linearizable',    // Must be atomic — critical for idempotency
+    setIfAbsent: 'linearizable',      // Must be atomic — critical for idempotency
+    get: 'read-your-writes',          // Must see own writes immediately
+    set: 'read-your-writes',          // Must see own writes immediately
+  },
+
+  /* Operational requirements */
+  operational: {
+    latency_p99_ms: 50,
+    availability: '99.9%',
+    durability: 'sync-replication-2z',
+    tls_in_transit: true,
+    encryption_at_rest: true,
+    namespace_isolation: true,
+  },
 };
+
+/* Provider registry — Owner registers implementations here */
+export const PROVIDER_REGISTRY = new Map();
+
+/* Register a provider implementation (called at startup) */
+export function registerProvider(identifier, factory) {
+  if (PROVIDER_REGISTRY.has(identifier)) {
+    throw new Error(`Provider '${identifier}' already registered`);
+  }
+  // Validate factory returns object with required methods
+  const instance = factory({}); // Test instantiation
+  for (const method of SHARED_STORAGE_PROVIDER_CONTRACT.methods) {
+    if (typeof instance[method] !== 'function') {
+      throw new Error(`Provider '${identifier}' missing required method: ${method}`);
+    }
+  }
+  PROVIDER_REGISTRY.set(identifier, factory);
+}
+
+/* Get registered provider factory */
+export function getProviderFactory(identifier) {
+  return PROVIDER_REGISTRY.get(identifier);
+}
+
+/* List registered providers */
+export function listProviders() {
+  return Array.from(PROVIDER_REGISTRY.keys());
+}
 
 /* Deterministic test adapter for LOCAL_TEST — implements SharedStorageClient contract */
 export class MemoryTestSharedStorageClient extends SharedStorageClient {
@@ -122,6 +168,12 @@ export function createSharedStorageClient(config) {
     throw new Error(`Invalid deployment config for shared storage: ${validated.reasons.join(', ')}`);
   }
 
+  // Security validation
+  const security = validateConfigSecurity(config);
+  if (!security.ok) {
+    throw new Error(`Config security validation failed: ${security.reasons.join(', ')}`);
+  }
+
   const environment = config.environment;
 
   // LOCAL_TEST: deterministic in-memory adapter
@@ -140,14 +192,19 @@ export function createSharedStorageClient(config) {
     );
   }
 
-  // Provider-specific implementations would be registered here
-  // For now, fail closed with clear message about Owner decision needed
-  throw new Error(
-    `SHARED_STORAGE_PROVIDER '${provider}' not implemented. ` +
-    `OWNER DECISION REQUIRED — PAYMENT SHARED STORAGE PROVIDER. ` +
-    `Supported providers must implement SharedStorageClient contract. ` +
-    `See ops/payment/runtime-storage.mjs for the contract.`
-  );
+  // Look up provider in registry
+  const factory = PROVIDER_REGISTRY.get(provider);
+  if (!factory) {
+    throw new Error(
+      `SHARED_STORAGE_PROVIDER '${provider}' not registered. ` +
+      `OWNER DECISION REQUIRED — PAYMENT SHARED STORAGE PROVIDER. ` +
+      `Available providers: ${listProviders().join(', ') || 'none registered'}. ` +
+      `See ops/payment/runtime-storage.mjs for the SharedStorageClient contract.`
+    );
+  }
+
+  // Create provider instance with config
+  return factory(config);
 }
 
 /* Create ProductionStorageAdapter bound to deployment config */
@@ -172,20 +229,37 @@ export function createBoundProductionStorageAdapter(config) {
   return adapter;
 }
 
-/* Provider registration for future Owner decisions */
-/*
-export const PROVIDER_REGISTRY = {
-  'redis': (config) => new RedisSharedStorageClient(config),
-  'postgresql': (config) => new PostgresSharedStorageClient(config),
-  'dynamodb': (config) => new DynamoDBSharedStorageClient(config),
-};
-
-function createSharedStorageClient(config) {
-  const provider = config.shared_storage_provider;
-  const factory = PROVIDER_REGISTRY[provider];
-  if (!factory) {
-    throw new Error(`Unknown shared storage provider: ${provider}`);
-  }
-  return factory(config);
+/* Convenience: create client directly from environment (for endpoint handlers) */
+export async function createSharedStorageClientFromEnv(env = process.env) {
+  const { buildConfigFromEnv } = await import('./deployment-config.mjs');
+  const config = buildConfigFromEnv(env);
+  return createSharedStorageClient(config);
 }
-*/
+
+/* Convenience: create adapter directly from environment (for endpoint handlers) */
+export async function createBoundProductionStorageAdapterFromEnv(env = process.env) {
+  const { buildConfigFromEnv } = await import('./deployment-config.mjs');
+  const config = buildConfigFromEnv(env);
+  return createBoundProductionStorageAdapter(config);
+}
+
+/* Validate shared storage connectivity (ping/health check) */
+export async function validateSharedStorageConnectivity(client) {
+  try {
+    // Test basic get/set operations to verify connectivity
+    const testKey = `health-check-${Date.now()}`;
+    const testValue = { test: true, timestamp: new Date().toISOString() };
+
+    await client.set(testKey, testValue);
+    const retrieved = await client.get(testKey);
+    await client.delete(testKey);
+
+    if (!retrieved || retrieved.test !== true) {
+      return { ok: false, reason: 'Connectivity test failed: data mismatch' };
+    }
+
+    return { ok: true, reason: 'Shared storage connectivity verified' };
+  } catch (err) {
+    return { ok: false, reason: `Connectivity test failed: ${err.message}` };
+  }
+}

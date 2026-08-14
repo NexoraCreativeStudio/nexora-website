@@ -1,4 +1,4 @@
-/* Nexora — Payment Deployment Configuration Contract (PROP.14)
+/* Nexora — Payment Deployment Configuration Contract (PROP.14/15)
    Governed configuration model for controlled payment backend deployment.
    All values are environment references — never committed with real values. */
 
@@ -56,7 +56,57 @@ export const DEPLOYMENT_CONFIG_KEYS = [
   // Request limits
   'MAX_JSON_BODY_SIZE',               // Max JSON body size in bytes (default: 1048576)
   'MAX_RAW_WEBHOOK_SIZE',             // Max raw webhook body size in bytes (default: 1048576)
+
+  // STAGING_TEST specific (PROP.15)
+  'STRIPE_API_VERSION',               // Stripe API version pin (e.g., '2024-06-20')
+  'WEBHOOK_TOLERANCE_SECONDS',        // Webhook timestamp tolerance (default: 300)
+  'IDEMPOTENCY_TTL_SECONDS',          // Idempotency key TTL (default: 86400 = 24h)
+  'RECONCILIATION_TOLERANCE_PENCE',   // Amount tolerance for reconciliation (default: 0)
 ];
+
+/* STAGING_TEST formal configuration contract (PROP.15 §6) */
+export const STAGING_TEST_CONFIG_CONTRACT = {
+  /* Environment identification */
+  environment: 'STAGING_TEST',
+
+  /* Stripe mode MUST be TEST — enforced by validation */
+  stripe_mode: 'TEST',
+
+  /* Shared storage provider MUST be non-memory — enforced by validation */
+  // shared_storage_provider: 'redis' | 'postgresql' | 'dynamodb' | ...
+
+  /* Shared storage namespace MUST follow pattern */
+  // shared_storage_namespace: 'nexora/payment/STAGING_TEST'
+
+  /* Stripe secrets MUST be configured (not placeholders) — enforced by readiness */
+  // stripe_secret_key: 'sk_test_...' (via STRIPE_SECRET_KEY_REF)
+  // stripe_webhook_secret: 'whsec_...' (via STRIPE_WEBHOOK_SECRET_REF)
+  // stripe_publishable_key: 'pk_test_...' (via STRIPE_PUBLISHABLE_KEY_REF)
+
+  /* URLs MUST use HTTPS and be configured */
+  // public_base_url: 'https://staging.nexora.studio'
+  // payment_api_base_url: 'https://api-staging.nexora.studio'
+  // stripe_success_url: 'https://staging.nexora.studio/payment/success?session_id={CHECKOUT_SESSION_ID}'
+  // stripe_cancel_url: 'https://staging.nexora.studio/payment/cancel'
+
+  /* CORS MUST be explicit (no wildcard) */
+  // allowed_origins: 'https://staging.nexora.studio'
+
+  /* Kill switch defaults to false — operator must explicitly enable */
+  // staging_payment_enabled: false
+
+  /* Stripe API version pinning */
+  // stripe_api_version: '2024-06-20'
+
+  /* Webhook tolerance (seconds) — Stripe recommends 300 */
+  // webhook_tolerance_seconds: 300
+
+  /* Idempotency TTL (seconds) — default 24 hours */
+  // idempotency_ttl_seconds: 86400
+
+  /* Reconciliation tolerance (pence) — default 0 (exact match) */
+  // reconciliation_tolerance_pence: 0
+};
 
 /* Forbidden patterns in committed files (secret scanning) */
 export const DEPLOYMENT_SECRET_PATTERNS = [
@@ -67,6 +117,28 @@ export const DEPLOYMENT_SECRET_PATTERNS = [
   /sk_test_[a-zA-Z0-9]{24,}/,  // Test keys also should not be committed
   /pk_live_[a-zA-Z0-9]{24,}/,
   /pk_test_[a-zA-Z0-9]{24,}/,
+];
+
+/* Additional patterns for PROP.15 secret scanning */
+export const DEPLOYMENT_SECRET_PATTERNS_EXTENDED = [
+  ...DEPLOYMENT_SECRET_PATTERNS,
+  // Shared storage connection strings with credentials
+  /redis:\/\/[^:]+:[^@]+@/,
+  /postgresql:\/\/[^:]+:[^@]+@/,
+  /mongodb:\/\/[^:]+:[^@]+@/,
+  // Generic API keys/tokens
+  /[a-zA-Z0-9_-]{32,}/,  // Generic long tokens (may have false positives)
+  // JWTs
+  /eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/,
+];
+
+/* Placeholder detection patterns */
+export const DEPLOYMENT_PLACEHOLDER_PATTERNS = [
+  /PLACEHOLDER_REPLACE_WITH_REAL/,
+  /your-.*-here/i,
+  /xxx+/,
+  /changeme/i,
+  /replace-?me/i,
 ];
 
 /* Synthetic placeholder patterns (allowed in examples only) */
@@ -138,8 +210,24 @@ export function validateDeploymentConfig(config) {
     if (!config.shared_storage_provider) {
       reasons.push('STAGING_TEST requires SHARED_STORAGE_PROVIDER');
     }
+    if (config.shared_storage_provider === 'memory' || config.shared_storage_provider === 'memory-test') {
+      reasons.push('STAGING_TEST requires non-memory SHARED_STORAGE_PROVIDER (memory only valid for LOCAL_TEST)');
+    }
     if (!config.shared_storage_namespace) {
       reasons.push('STAGING_TEST requires SHARED_STORAGE_NAMESPACE');
+    }
+    // PROP.15: Additional STAGING_TEST requirements
+    if (!config.stripe_api_version) {
+      reasons.push('STAGING_TEST requires STRIPE_API_VERSION');
+    }
+    if (!config.webhook_tolerance_seconds || config.webhook_tolerance_seconds < 0) {
+      reasons.push('STAGING_TEST requires WEBHOOK_TOLERANCE_SECONDS >= 0');
+    }
+    if (!config.idempotency_ttl_seconds || config.idempotency_ttl_seconds < 60) {
+      reasons.push('STAGING_TEST requires IDEMPOTENCY_TTL_SECONDS >= 60');
+    }
+    if (config.reconciliation_tolerance_pence === undefined || config.reconciliation_tolerance_pence < 0) {
+      reasons.push('STAGING_TEST requires RECONCILIATION_TOLERANCE_PENCE >= 0');
     }
   }
 
@@ -279,6 +367,12 @@ export function buildConfigFromEnv(env = process.env) {
     log_level: env.LOG_LEVEL || 'info',
     max_json_body_size: parseInt(env.MAX_JSON_BODY_SIZE, 10) || 1048576,
     max_raw_webhook_size: parseInt(env.MAX_RAW_WEBHOOK_SIZE, 10) || 1048576,
+
+    // PROP.15 additions
+    stripe_api_version: env.STRIPE_API_VERSION || '2024-06-20',
+    webhook_tolerance_seconds: parseInt(env.WEBHOOK_TOLERANCE_SECONDS, 10) || 300,
+    idempotency_ttl_seconds: parseInt(env.IDEMPOTENCY_TTL_SECONDS, 10) || 86400,
+    reconciliation_tolerance_pence: parseInt(env.RECONCILIATION_TOLERANCE_PENCE, 10) || 0,
   };
 }
 
@@ -296,4 +390,63 @@ export function safeConfigForLogging(config) {
     }
   }
   return safe;
+}
+
+/* Secret scanning — checks a string for forbidden secret patterns */
+export function scanForSecrets(content, context = 'unknown') {
+  const findings = [];
+  for (const pattern of DEPLOYMENT_SECRET_PATTERNS_EXTENDED) {
+    const matches = content.match(pattern);
+    if (matches) {
+      for (const match of matches) {
+        findings.push({
+          pattern: pattern.source,
+          match: match.substring(0, 50), // Truncate for safety
+          context,
+        });
+      }
+    }
+  }
+  return findings;
+}
+
+/* Placeholder detection — checks for placeholder patterns that should be replaced */
+export function detectPlaceholders(content, context = 'unknown') {
+  const findings = [];
+  for (const pattern of DEPLOYMENT_PLACEHOLDER_PATTERNS) {
+    const matches = content.match(pattern);
+    if (matches) {
+      for (const match of matches) {
+        findings.push({
+          pattern: pattern.source,
+          match: match.substring(0, 50),
+          context,
+        });
+      }
+    }
+  }
+  return findings;
+}
+
+/* Validate config has no secrets and no unresolved placeholders for non-LOCAL_TEST */
+export function validateConfigSecurity(config) {
+  const reasons = [];
+  const safeConfig = safeConfigForLogging(config);
+
+  // Check for secrets in config values
+  const configString = JSON.stringify(safeConfig);
+  const secretFindings = scanForSecrets(configString, 'config');
+  if (secretFindings.length > 0) {
+    reasons.push(`Config contains apparent secrets: ${secretFindings.map(f => f.match).join(', ')}`);
+  }
+
+  // Check for placeholders in non-LOCAL_TEST environments
+  if (config.environment !== DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
+    const placeholderFindings = detectPlaceholders(configString, 'config');
+    if (placeholderFindings.length > 0) {
+      reasons.push(`Config contains unresolved placeholders in ${config.environment}: ${placeholderFindings.map(f => f.match).join(', ')}`);
+    }
+  }
+
+  return { ok: reasons.length === 0, reasons, secretFindings: scanForSecrets(configString), placeholderFindings: detectPlaceholders(configString) };
 }

@@ -73,15 +73,17 @@ export default async function handler(req, res) {
     return sendErrorResponse(res, ERROR_CODES.CONFIG_INVALID, correlationId, configValidation.reasons);
   }
 
-  // Enforce STAGING_PAYMENT_ENABLED gate
+  // STAGING_PAYMENT_ENABLED gate behavior (PROP.14/15):
+  // - Blocks NEW checkout creation (handled in checkout-create.mjs)
+  // - Does NOT block webhook processing for in-flight transactions
+  // - Log gate state for observability
   if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST && !config.staging_payment_enabled) {
     logger.logKillSwitch({
       correlationId,
       gate: 'STAGING_PAYMENT_ENABLED',
       enabled: false,
-      action: 'webhook_blocked',
+      action: 'webhook_allowed_in_flight',
     });
-    return sendErrorResponse(res, ERROR_CODES.STAGING_PAYMENTS_DISABLED, correlationId);
   }
 
   // Parse raw body with size limit (exact bytes for signature verification)
