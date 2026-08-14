@@ -1,18 +1,39 @@
-/* Nexora — Payment Readiness Endpoint (PROP.14)
+/* Nexora — Payment Readiness Endpoint (PROP.14/15)
    GET /api/payment/readiness
    STAGING_TEST readiness requires:
-   - shared storage configured
+   - shared storage configured (non-memory provider)
    - Stripe SDK/verifier available
-   - test-mode Stripe secret configured
-   - webhook secret configured
+   - test-mode Stripe secret configured (not placeholder)
+   - webhook secret configured (not placeholder)
    - base URL configured
-   - staging gate state known */
+   - staging gate state known
+   - Stripe API version pinned
+   - Webhook tolerance configured
+   - Idempotency TTL configured
+   - Reconciliation tolerance configured
 
-import { buildConfigFromEnv, validateDeploymentConfig, DEPLOYMENT_ENVIRONMENTS } from '../../ops/payment/deployment-config.mjs';
+   Returns: READY/NOT_READY with detailed checks + COLLECTION_ENABLED/COLLECTION_DISABLED state */
+
+import { buildConfigFromEnv, validateDeploymentConfig, DEPLOYMENT_ENVIRONMENTS, validateStripeConfig } from '../../ops/payment/deployment-config.mjs';
 import { createSharedStorageClient } from '../../ops/payment/shared-storage-binding.mjs';
 import { getDefaultLogger } from '../../ops/payment/structured-logging.mjs';
 
 const logger = getDefaultLogger();
+
+/* Deployment state model (PROP.15 §18-20) */
+export const DEPLOYMENT_STATE = {
+  /* Health: runtime is alive and config is parseable */
+  HEALTHY: 'HEALTHY',
+  UNHEALTHY: 'UNHEALTHY',
+
+  /* Readiness: all dependencies configured and gates known */
+  READY: 'READY',
+  NOT_READY: 'NOT_READY',
+
+  /* Collection-enabled: payments can be created (subset of READY) */
+  COLLECTION_ENABLED: 'COLLECTION_ENABLED',
+  COLLECTION_DISABLED: 'COLLECTION_DISABLED',
+};
 
 /* Main handler */
 export default async function handler(req, res) {
@@ -50,37 +71,49 @@ export default async function handler(req, res) {
 
     // Validate config
     const configValidation = validateDeploymentConfig(config);
+    const stripeValidation = validateStripeConfig(config);
     const reasons = [];
     const checks = {
       config_valid: configValidation.ok,
+      stripe_config_valid: stripeValidation.ok,
       environment: config.environment,
       stripe_mode: config.stripe_mode,
+      stripe_api_version: config.stripe_api_version,
+      webhook_tolerance_seconds: config.webhook_tolerance_seconds,
+      idempotency_ttl_seconds: config.idempotency_ttl_seconds,
+      reconciliation_tolerance_pence: config.reconciliation_tolerance_pence,
       staging_gate_known: true,
       shared_storage_configured: false,
+      shared_storage_provider: config.shared_storage_provider,
       stripe_secret_configured: false,
       webhook_secret_configured: false,
       base_url_configured: false,
       stripe_verifier_available: false,
       staging_payment_enabled: config.staging_payment_enabled,
+      production_payment_enabled: config.production_payment_enabled,
+      payments_enabled: config.payments_enabled,
     };
 
     if (!configValidation.ok) {
       reasons.push(...configValidation.reasons);
     }
+    if (!stripeValidation.ok) {
+      reasons.push(...stripeValidation.reasons);
+    }
 
-    // Check shared storage for STAGING_TEST
+    // Check shared storage for STAGING_TEST and PRODUCTION_DISABLED
     if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST ||
         config.environment === DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED) {
       if (config.shared_storage_provider && config.shared_storage_provider !== 'memory') {
         checks.shared_storage_configured = true;
       } else {
-        reasons.push('shared storage provider not configured');
+        reasons.push('shared storage provider not configured (must be non-memory for STAGING_TEST/PRODUCTION_DISABLED)');
       }
     } else if (config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
       checks.shared_storage_configured = true; // memory adapter available
     }
 
-    // Check Stripe secrets (references)
+    // Check Stripe secrets (references - not placeholders)
     if (config.stripe_secret_key && !config.stripe_secret_key.includes('PLACEHOLDER')) {
       checks.stripe_secret_configured = true;
     } else {
@@ -104,15 +137,18 @@ export default async function handler(req, res) {
       reasons.push('base URLs not configured');
     }
 
-    // Check Stripe verifier availability (production would need SDK)
+    // Check Stripe verifier availability
     if (config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
       checks.stripe_verifier_available = true; // deterministic verifier available
     } else if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST) {
-      // In STAGING_TEST, would need official Stripe SDK
-      // For now, check if stripe_mode is TEST
       checks.stripe_verifier_available = config.stripe_mode === 'TEST';
       if (config.stripe_mode !== 'TEST') {
         reasons.push('STAGING_TEST requires STRIPE_MODE=TEST');
+      }
+    } else if (config.environment === DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED) {
+      checks.stripe_verifier_available = config.stripe_mode === 'LIVE' || config.stripe_mode === 'TEST';
+      if (config.stripe_mode === 'LIVE' && !config.production_payment_enabled) {
+        reasons.push('PRODUCTION_DISABLED with STRIPE_MODE=LIVE requires PRODUCTION_PAYMENT_ENABLED=true');
       }
     }
 
@@ -125,13 +161,19 @@ export default async function handler(req, res) {
 
     const ready = reasons.length === 0;
 
+    // Collection-enabled state (subset of readiness)
+    const collectionEnabled = checkCollectionEnabled(config);
+
     logger.logReadinessCheck({
       correlationId,
       ready,
       reasons,
+      collection_enabled: collectionEnabled,
     });
 
-    return res.status(ready ? 200 : 503).json({
+    const statusCode = ready ? 200 : 503;
+
+    return res.status(statusCode).json({
       ok: ready,
       ready,
       environment: config.environment,
@@ -139,7 +181,14 @@ export default async function handler(req, res) {
       release_sha: config.release_sha,
       timestamp: new Date().toISOString(),
       checks,
+      collection_enabled: collectionEnabled,
+      kill_switches: {
+        payments_enabled: config.payments_enabled,
+        staging_payment_enabled: config.staging_payment_enabled,
+        production_payment_enabled: config.production_payment_enabled,
+      },
       reasons: reasons.length > 0 ? reasons : undefined,
+      state: ready ? DEPLOYMENT_STATE.READY : DEPLOYMENT_STATE.NOT_READY,
     });
 
   } catch (err) {
@@ -153,9 +202,67 @@ export default async function handler(req, res) {
     return res.status(500).json({
       ok: false,
       ready: false,
+      state: DEPLOYMENT_STATE.NOT_READY,
+      collection_enabled: DEPLOYMENT_STATE.COLLECTION_DISABLED,
       error: { code: 'INTERNAL_ERROR', message: 'Readiness check failed', request_id: correlationId },
     });
   }
+}
+
+/* Check if collection is enabled (payments can be created) */
+function checkCollectionEnabled(config) {
+  // Global kill switch
+  if (!config.payments_enabled) {
+    return DEPLOYMENT_STATE.COLLECTION_DISABLED;
+  }
+
+  // Not ready means not collection-enabled
+  if (!checkReadyInternal(config)) {
+    return DEPLOYMENT_STATE.COLLECTION_DISABLED;
+  }
+
+  // Environment-specific gates
+  if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST) {
+    return config.staging_payment_enabled ? DEPLOYMENT_STATE.COLLECTION_ENABLED : DEPLOYMENT_STATE.COLLECTION_DISABLED;
+  }
+
+  if (config.environment === DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED) {
+    return config.production_payment_enabled ? DEPLOYMENT_STATE.COLLECTION_ENABLED : DEPLOYMENT_STATE.COLLECTION_DISABLED;
+  }
+
+  // LOCAL_TEST: collection enabled if payments_enabled and ready
+  return config.payments_enabled ? DEPLOYMENT_STATE.COLLECTION_ENABLED : DEPLOYMENT_STATE.COLLECTION_DISABLED;
+}
+
+/* Internal ready check (without logging) */
+function checkReadyInternal(config) {
+  const configValidation = validateDeploymentConfig(config);
+  const stripeValidation = validateStripeConfig(config);
+  if (!configValidation.ok || !stripeValidation.ok) return false;
+
+  // Shared storage
+  if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST ||
+      config.environment === DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED) {
+    if (!config.shared_storage_provider || config.shared_storage_provider === 'memory') return false;
+  }
+
+  // Stripe secrets
+  if (config.environment !== DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
+    if (config.stripe_secret_key?.includes('PLACEHOLDER')) return false;
+    if (config.stripe_webhook_secret?.includes('PLACEHOLDER')) return false;
+  }
+
+  // Base URLs
+  if (!config.public_base_url || !config.payment_api_base_url) return false;
+
+  // Stripe verifier
+  if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST && config.stripe_mode !== 'TEST') return false;
+  if (config.environment === DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED && config.stripe_mode === 'LIVE' && !config.production_payment_enabled) return false;
+
+  // Gates
+  if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST && !config.staging_payment_enabled) return false;
+
+  return true;
 }
 
 /* Generate correlation ID */

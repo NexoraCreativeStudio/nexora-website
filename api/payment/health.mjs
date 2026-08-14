@@ -1,11 +1,27 @@
-/* Nexora — Payment Health Endpoint (PROP.14)
+/* Nexora — Payment Health Endpoint (PROP.14/15)
    GET /api/payment/health
-   Safe health check — no secret output, no provider connectivity test unless safe. */
+   Safe health check — no secret output, no provider connectivity test unless safe.
+   Returns: runtime status, environment, deployment identity, kill switch states. */
 
-import { buildConfigFromEnv } from '../../ops/payment/deployment-config.mjs';
+import { buildConfigFromEnv, DEPLOYMENT_ENVIRONMENTS } from '../../ops/payment/deployment-config.mjs';
 import { getDefaultLogger } from '../../ops/payment/structured-logging.mjs';
 
 const logger = getDefaultLogger();
+
+/* Deployment state model (PROP.15 §18-20) */
+export const DEPLOYMENT_STATE = {
+  /* Health: runtime is alive and config is parseable */
+  HEALTHY: 'HEALTHY',
+  UNHEALTHY: 'UNHEALTHY',
+
+  /* Readiness: all dependencies configured and gates known */
+  READY: 'READY',
+  NOT_READY: 'NOT_READY',
+
+  /* Collection-enabled: payments can be created (subset of READY) */
+  COLLECTION_ENABLED: 'COLLECTION_ENABLED',
+  COLLECTION_DISABLED: 'COLLECTION_DISABLED',
+};
 
 /* Main handler */
 export default async function handler(req, res) {
@@ -61,20 +77,34 @@ export default async function handler(req, res) {
     delete safeConfig.shared_storage_url;
     delete safeConfig.shared_storage_token;
 
+    // Determine health status
+    const healthy = checks.config_parseable && checks.runtime === 'alive';
+    const status = healthy ? DEPLOYMENT_STATE.HEALTHY : DEPLOYMENT_STATE.UNHEALTHY;
+
+    // Determine collection-enabled state
+    const collectionEnabled = checkCollectionEnabled(config);
+
     logger.logHealthCheck({
       correlationId,
-      status: 'healthy',
+      status: status === DEPLOYMENT_STATE.HEALTHY ? 'healthy' : 'unhealthy',
       checks,
+      collection_enabled: collectionEnabled,
     });
 
-    return res.status(200).json({
-      ok: true,
-      status: 'healthy',
+    return res.status(healthy ? 200 : 503).json({
+      ok: healthy,
+      status,
       environment: config.environment,
       deployment_id: config.deployment_id,
       release_sha: config.release_sha,
       timestamp: new Date().toISOString(),
       checks,
+      collection_enabled: collectionEnabled,
+      kill_switches: {
+        payments_enabled: config.payments_enabled,
+        staging_payment_enabled: config.staging_payment_enabled,
+        production_payment_enabled: config.production_payment_enabled,
+      },
     });
 
   } catch (err) {
@@ -87,10 +117,31 @@ export default async function handler(req, res) {
 
     return res.status(500).json({
       ok: false,
-      status: 'unhealthy',
+      status: DEPLOYMENT_STATE.UNHEALTHY,
       error: { code: 'INTERNAL_ERROR', message: 'Health check failed', request_id: correlationId },
+      collection_enabled: DEPLOYMENT_STATE.COLLECTION_DISABLED,
     });
   }
+}
+
+/* Check if collection is enabled (payments can be created) */
+function checkCollectionEnabled(config) {
+  // Global kill switch
+  if (!config.payments_enabled) {
+    return DEPLOYMENT_STATE.COLLECTION_DISABLED;
+  }
+
+  // Environment-specific gates
+  if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST) {
+    return config.staging_payment_enabled ? DEPLOYMENT_STATE.COLLECTION_ENABLED : DEPLOYMENT_STATE.COLLECTION_DISABLED;
+  }
+
+  if (config.environment === DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED) {
+    return config.production_payment_enabled ? DEPLOYMENT_STATE.COLLECTION_ENABLED : DEPLOYMENT_STATE.COLLECTION_DISABLED;
+  }
+
+  // LOCAL_TEST: collection enabled if payments_enabled
+  return config.payments_enabled ? DEPLOYMENT_STATE.COLLECTION_ENABLED : DEPLOYMENT_STATE.COLLECTION_DISABLED;
 }
 
 /* Generate correlation ID */
