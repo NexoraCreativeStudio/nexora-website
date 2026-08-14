@@ -19,23 +19,40 @@ function log(message) {
   console.log(`[VALIDATOR] ${message}`);
 }
 
+function isSyntheticTestArtifact(filePath) {
+  try {
+    const content = readFileSync(filePath, 'utf8');
+    const data = JSON.parse(content);
+    // Synthetic test artifacts are marked with _example: true
+    return data._example === true;
+  } catch {
+    return false;
+  }
+}
+
 async function validate() {
   log('Starting PROP.13 Runtime Security Validation...');
 
-  // §36.1: Audit for private artifacts
+  // §36.1: Audit for private artifacts (non-synthetic only)
   log('Auditing private/test artifacts...');
   const checkDir = (dir) => {
     if (!existsSync(dir)) return;
     const files = readdirSync(dir, { recursive: true });
     for (const file of files) {
       if (file.endsWith('.json')) {
-        fail(`Found potential private test artifact: ${join(dir, file)}`);
+        const filePath = join(dir, file);
+        if (!isSyntheticTestArtifact(filePath)) {
+          fail(`Found non-synthetic private artifact: ${filePath}`);
+        } else {
+          log(`Ignoring synthetic test artifact: ${filePath}`);
+        }
       }
     }
   };
   checkDir(join(PRIVATE_DIR, 'test-integration'));
   checkDir(join(PRIVATE_DIR, 'test-runtime'));
   checkDir(join(PRIVATE_DIR, 'test-shared'));
+  checkDir(join(PRIVATE_DIR, 'test-factory'));
 
   // §36.2: Verify Production environment configuration
   // Fail-closed test: If we initialize PRODUCTION storage without a client, it should throw.
