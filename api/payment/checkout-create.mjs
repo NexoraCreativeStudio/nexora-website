@@ -1,29 +1,36 @@
-/* Nexora — Stripe TEST Checkout Session Creation API (PROP.12)
+/* Nexora — Stripe Checkout Session Creation API (PROP.14)
    POST /api/payment/checkout
-   Creates a Stripe Checkout Session for a validated payment token.
-   TEST/SANDBOX only — no LIVE credentials, no real Stripe calls.
-   Uses governed storage abstraction (runtime-storage.mjs) for persistence. */
+   Deployment-ready: TEST/SANDBOX/STAGING_TEST modes.
+   Server-authoritative amount/currency, environment gates, staging kill switch,
+   idempotency, safe URL construction, governed lineage. */
 
 import { createHash } from 'crypto';
 import { join } from 'path';
-import { StripeTestAdapter } from '../../ops/payment/stripe-adapter.mjs';
+import { buildConfigFromEnv, validateDeploymentConfig, DEPLOYMENT_ENVIRONMENTS, STRIPE_MODES } from '../../ops/payment/deployment-config.mjs';
+import { StripeAdapter, STRIPE_PROVIDER_ID, toMinorUnits, buildStripeMetadata, deriveIdempotencyKey } from '../../ops/payment/stripe-adapter.mjs';
 import { buildCheckoutSessionRequest, normalizeStripeCheckoutSession, buildPortalSession, validatePortalSession, attachCheckoutSession, checkSessionValidForCheckout } from '../../ops/payment/portal-session.mjs';
-import { buildPaymentToken, checkTokenUsable, validatePaymentToken, TOKEN_EXAMPLE, markTokenUsed } from '../../ops/payment/token-model.mjs';
+import { buildPaymentToken, checkTokenUsable, validatePaymentToken, TOKEN_EXAMPLE, markTokenUsed, TOKEN_ID_RE } from '../../ops/payment/token-model.mjs';
 import { createStorageAdapter } from '../../ops/payment/runtime-storage.mjs';
+import { createBoundProductionStorageAdapter } from '../../ops/payment/shared-storage-binding.mjs';
+import { parseJsonBody, setSafeResponseHeaders, handlePreflight, validateTokenId, sendErrorResponse, ERROR_CODES, createRequestValidator } from './request-limits.mjs';
+import { getDefaultLogger } from '../../ops/payment/structured-logging.mjs';
+import { generateCorrelationId } from '../../ops/payment/structured-logging.mjs';
 
 const OPS_DIR = join(process.cwd(), 'ops');
 const PAYMENT_DIR = join(OPS_DIR, 'payment');
 
-/* Stripe TEST configuration (synthetic, no real keys) */
-const STRIPE_TEST_CONFIG = {
-  success_url: 'https://example.com/payment/success?session_id={CHECKOUT_SESSION_ID}',
-  cancel_url: 'https://example.com/payment/cancel?canceled=true',
-  production_activation_gate: false,
-};
+const logger = getDefaultLogger();
 
-/* Governed storage adapter (TEST mode uses deterministic file storage) */
-const storage = createStorageAdapter({ environment: 'TEST', config: { baseDir: join(PAYMENT_DIR, 'private', 'test-runtime') } });
+/* Build Stripe config from deployment config */
+function buildStripeConfig(config) {
+  return {
+    success_url: config.stripe_success_url,
+    cancel_url: config.stripe_cancel_url,
+    production_activation_gate: config.production_payment_enabled === true,
+  };
+}
 
+/* Get test invoice fixture */
 async function getTestInvoice(invoiceId) {
   const file = join(OPS_DIR, 'billing', 'examples', 'invoice-issued-example.json');
   const { existsSync, readFileSync } = await import('fs');
@@ -34,6 +41,7 @@ async function getTestInvoice(invoiceId) {
   return null;
 }
 
+/* Get test payment request fixture */
 async function getTestRequest(requestId) {
   const file = join(PAYMENT_DIR, 'examples', 'payment-request-example.json');
   const { existsSync, readFileSync } = await import('fs');
@@ -44,11 +52,12 @@ async function getTestRequest(requestId) {
   return null;
 }
 
+/* Lookup payment token (test fixtures only) */
 function lookupToken(tokenId) {
   if (tokenId === TOKEN_EXAMPLE.token_id) {
     return { token: TOKEN_EXAMPLE, source: 'example' };
   }
-  if (/^PAT-[A-Za-z0-9_-]{43}$/.test(tokenId)) {
+  if (TOKEN_ID_RE.test(tokenId)) {
     const derivedToken = buildPaymentToken({
       invoice: getTestInvoice('INV-2026-9898-001'),
       request: getTestRequest('REQ-2026-9898-001'),
@@ -61,68 +70,93 @@ function lookupToken(tokenId) {
   return null;
 }
 
-/* Create synthetic Stripe Checkout Session (TEST mode) */
-function createTestCheckoutSession(checkoutRequest) {
-  const sessionId = `cs_test_${createHash('sha256').update(`nexora-checkout:${checkoutRequest.metadata.nexora_payment_request_id}:${checkoutRequest.line_items[0].price_data.unit_amount}`).digest('hex').slice(0, 24)}`;
-  return {
-    id: sessionId,
-    object: 'checkout.session',
-    url: `https://checkout.stripe.com/pay/${sessionId}#fidkdWxOYHwnPyd1blpxYHZxWjA0Vl9kOWZFUlRiS05XU35mX2JzN2V8V0ZKYmh8Qkx8JzA%3D`,
-    payment_status: 'unpaid',
-    status: 'open',
-    amount_total: checkoutRequest.line_items[0].price_data.unit_amount,
-    currency: checkoutRequest.line_items[0].price_data.currency,
-    metadata: checkoutRequest.metadata,
-    success_url: checkoutRequest.success_url,
-    cancel_url: checkoutRequest.cancel_url,
-    expires_at: Math.floor(Date.now() / 1000) + 1800,
-    livemode: false,
-    client_reference_id: checkoutRequest.client_reference_id,
-    _test_only: true,
-    note: 'SYNTHETIC TEST-MODE REPRESENTATION — NOT A REAL STRIPE OBJECT',
-  };
+/* Create Stripe Checkout Session (test mode uses deterministic synthetic representation) */
+async function createCheckoutSession(adapter, paymentRequest, config) {
+  return await adapter.createCheckoutSession(paymentRequest);
 }
 
 /* Main handler */
 export default async function handler(req, res) {
-  const { readFileSync, existsSync, writeFileSync, mkdirSync } = await import('fs');
-  const { join } = await import('path');
+  const correlationId = req.headers['x-correlation-id'] || req.headers['x-request-id'] || generateCorrelationId();
+  req.correlationId = correlationId;
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Safe headers
+  setSafeResponseHeaders(res, correlationId);
+
+  // CORS from config
+  const config = buildConfigFromEnv();
+  const origins = config.allowed_origins ? config.allowed_origins.split(',').map(o => o.trim()) : [];
+  const requestOrigin = req.headers.origin;
+  if (requestOrigin && origins.includes(requestOrigin)) {
+    res.setHeader('Access-Control-Allow-Origin', requestOrigin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Correlation-Id');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (handlePreflight(req, res)) return;
+
+  // Validate deployment config
+  const configValidation = validateDeploymentConfig(config);
+  if (!configValidation.ok) {
+    logger.logConfigValidation({
+      correlationId,
+      environment: config.environment,
+      valid: false,
+      reasons: configValidation.reasons,
+    });
+    return sendErrorResponse(res, ERROR_CODES.CONFIG_INVALID, correlationId, configValidation.reasons);
   }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+  // Enforce STAGING_PAYMENT_ENABLED gate
+  if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST && !config.staging_payment_enabled) {
+    logger.logKillSwitch({
+      correlationId,
+      gate: 'STAGING_PAYMENT_ENABLED',
+      enabled: false,
+      action: 'checkout_blocked',
+    });
+    return sendErrorResponse(res, ERROR_CODES.STAGING_PAYMENTS_DISABLED, correlationId);
   }
 
-  const body = req.body;
-  if (!body || typeof body !== 'object') {
-    return res.status(400).json({ ok: false, error: 'Request body required' });
+  // Enforce PRODUCTION_PAYMENT_ENABLED gate
+  if (config.environment === DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED && !config.production_payment_enabled) {
+    logger.logKillSwitch({
+      correlationId,
+      gate: 'PRODUCTION_PAYMENT_ENABLED',
+      enabled: false,
+      action: 'checkout_blocked',
+    });
+    return sendErrorResponse(res, ERROR_CODES.PRODUCTION_PAYMENTS_DISABLED, correlationId);
   }
 
+  // Parse JSON body with size limit
+  let body;
+  try {
+    body = await parseJsonBody(req, config.max_json_body_size);
+  } catch (err) {
+    return sendErrorResponse(res, err.code, correlationId);
+  }
+
+  // Validate token
   const tokenId = body.token;
-  if (!tokenId || !/^PAT-[A-Za-z0-9_-]{43}$/.test(tokenId)) {
-    return res.status(400).json({ ok: false, error: 'Valid token required' });
+  const tokenValidation = validateTokenId(tokenId);
+  if (!tokenValidation.ok) {
+    return sendErrorResponse(res, tokenValidation.code, correlationId);
   }
 
   try {
     // Lookup token
     const lookup = lookupToken(tokenId);
     if (!lookup) {
-      return res.status(404).json({ ok: false, error: 'Token not found' });
+      return sendErrorResponse(res, ERROR_CODES.TOKEN_NOT_FOUND, correlationId);
     }
 
     const { token, source } = lookup;
 
-    // Validate token
+    // Validate token structure
     const validation = validatePaymentToken(token, { requireExampleMarker: source === 'example' });
     if (validation.failures.length) {
-      return res.status(400).json({ ok: false, error: 'Invalid token structure', failures: validation.failures });
+      return sendErrorResponse(res, ERROR_CODES.INVALID_REQUEST, correlationId, validation.failures);
     }
 
     // Get invoice and request
@@ -130,49 +164,60 @@ export default async function handler(req, res) {
     const request = await getTestRequest(token.payment_request_id);
 
     if (!invoice || !request) {
-      return res.status(404).json({ ok: false, error: 'Associated invoice or request not found' });
+      return sendErrorResponse(res, ERROR_CODES.INVOICE_NOT_PAYABLE, correlationId);
     }
 
     // Check token usability
     const usable = checkTokenUsable(token, invoice, request);
     if (!usable.ok) {
       if (usable.reasons.some(r => r.includes('VOID_INVOICE') || r.includes('CANCELLED_INVOICE'))) {
-        return res.status(403).json({ ok: false, error: 'Invoice not payable', reasons: usable.reasons });
+        return sendErrorResponse(res, ERROR_CODES.INVOICE_NOT_PAYABLE, correlationId, usable.reasons);
       }
       if (usable.reasons.some(r => r.includes('expired') || r.includes('used'))) {
-        return res.status(410).json({ ok: false, error: 'Token expired or used', reasons: usable.reasons });
+        return sendErrorResponse(res, ERROR_CODES.TOKEN_USED, correlationId, usable.reasons);
       }
-      return res.status(400).json({ ok: false, error: 'Token not usable', reasons: usable.reasons });
+      return sendErrorResponse(res, ERROR_CODES.INVALID_REQUEST, correlationId, usable.reasons);
     }
 
     // Build portal session
     const sessionResult = buildPortalSession({ token, paymentRequest: request, invoice, example: true });
     if (!sessionResult.ok) {
-      return res.status(400).json({ ok: false, error: 'Failed to create portal session', reasons: sessionResult.reasons });
+      return sendErrorResponse(res, ERROR_CODES.CHECKOUT_CREATION_FAILED, correlationId, sessionResult.reasons);
     }
 
     let portalSession = sessionResult.session;
 
     // Build Stripe Checkout Session request
-    const checkoutRequest = buildCheckoutSessionRequest(request, portalSession, STRIPE_TEST_CONFIG);
+    const stripeConfig = buildStripeConfig(config);
+    const checkoutRequest = buildCheckoutSessionRequest(request, portalSession, stripeConfig);
 
-    // Create synthetic Stripe Checkout Session (TEST mode)
-    const stripeSession = createTestCheckoutSession(checkoutRequest);
+    // Create Stripe adapter
+    const stripeAdapter = new StripeAdapter({
+      environment: config.stripe_mode === 'LIVE' ? 'PRODUCTION' : 'TEST',
+      config: stripeConfig,
+    });
+
+    // Create Checkout Session
+    const stripeSession = await createCheckoutSession(stripeAdapter, request, stripeConfig);
 
     // Normalize and attach to portal session
     const normalized = normalizeStripeCheckoutSession(stripeSession);
     if (!normalized.ok) {
-      return res.status(500).json({ ok: false, error: 'Failed to normalize checkout session', reasons: normalized.reasons });
+      return sendErrorResponse(res, ERROR_CODES.CHECKOUT_CREATION_FAILED, correlationId, normalized.reasons);
     }
 
     const attached = attachCheckoutSession(portalSession, normalized.session);
     if (!attached.ok) {
-      return res.status(500).json({ ok: false, error: 'Failed to attach checkout session', reasons: attached.reasons });
+      return sendErrorResponse(res, ERROR_CODES.CHECKOUT_CREATION_FAILED, correlationId, attached.reasons);
     }
 
     portalSession = attached.session;
 
     // Store session via governed storage adapter
+    const storage = config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST
+      ? createStorageAdapter({ environment: 'TEST', config: { baseDir: join(PAYMENT_DIR, 'private', 'test-runtime') } })
+      : createBoundProductionStorageAdapter(config);
+
     await storage.createSession(portalSession);
 
     // Mark token as used (single-use)
@@ -181,6 +226,15 @@ export default async function handler(req, res) {
       // In production, persist updated token
     }
 
+    // Log checkout created
+    logger.logCheckoutCreated({
+      correlationId,
+      sessionId: portalSession.session_id,
+      paymentRequestId: request.request_id,
+      amount: request.amount_requested,
+      currency: request.currency,
+    });
+
     // Return checkout URL
     return res.status(200).json({
       ok: true,
@@ -188,19 +242,26 @@ export default async function handler(req, res) {
       checkout_session_id: normalized.session.id,
       portal_session_id: portalSession.session_id,
       expires_at: normalized.session.expires_at,
-      _test_only: true,
-      note: 'TEST MODE — synthetic Stripe Checkout Session',
+      environment: config.environment,
+      stripe_mode: config.stripe_mode,
+      _test_only: config.environment !== DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED || config.stripe_mode !== 'LIVE',
     });
 
   } catch (err) {
-    console.error('Checkout creation error:', err);
-    return res.status(500).json({ ok: false, error: 'Internal server error' });
+    logger.logError({
+      correlationId,
+      error_code: 'CHECKOUT_CREATION_FAILED',
+      message: err.message,
+      context: 'checkout_create',
+    });
+
+    return sendErrorResponse(res, ERROR_CODES.INTERNAL_ERROR, correlationId);
   }
 }
 
 /* For local testing */
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const testReq = { method: 'POST', body: { token: TOKEN_EXAMPLE.token_id } };
+  const testReq = { method: 'POST', headers: {}, body: { token: TOKEN_EXAMPLE.token_id } };
   const testRes = {
     statusCode: 200,
     headers: {},
