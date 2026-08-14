@@ -44,11 +44,11 @@ import {
 // Import PROP.12 modules
 import {
   createStorageAdapter,
-  TestFileStorageAdapter,
   ProductionStorageAdapter,
   validateStorageAdapter,
   PRIVATE_DIR
 } from './runtime-storage.mjs';
+import { TestFileStorageAdapter } from './runtime-storage-file-node.mjs';
 
 import {
   createWebhookVerifier,
@@ -261,8 +261,8 @@ runTest('STORAGE: TestFileStorageAdapter idempotency check/set', async () => {
   assert(check2.eventId === 'evt-123456789012345678901234', 'event_id preserved');
 });
 
-runTest('STORAGE: createStorageAdapter factory returns TEST adapter for TEST env', () => {
-  const adapter = createStorageAdapter({ environment: 'TEST', config: { baseDir: join(PRIVATE_DIR, 'test-factory') } });
+runTest('STORAGE: createStorageAdapter factory returns TEST adapter for TEST env', async () => {
+  const adapter = await createStorageAdapter({ environment: 'TEST', config: { baseDir: join(PRIVATE_DIR, 'test-factory') } });
   assert(adapter instanceof TestFileStorageAdapter, 'returns TestFileStorageAdapter for TEST');
   const validation = validateStorageAdapter(adapter, 'TEST');
   assert(validation.ok, 'validateStorageAdapter passes for TEST adapter');
@@ -391,8 +391,8 @@ runTest('VERIFIER: constantTimeEqual works correctly', () => {
   assert(constantTimeEqual('abc', 'abcd') === false, 'different length returns false');
 });
 
-runTest('VERIFIER: hmacSha256Hex produces valid output', () => {
-  const hash = hmacSha256Hex('secret', 'payload');
+runTest('VERIFIER: hmacSha256Hex produces valid output', async () => {
+  const hash = await hmacSha256Hex('secret', 'payload');
   assert(hash.length === 64, 'hash is 64 hex chars');
   assert(/^[0-9a-f]{64}$/.test(hash), 'hash is valid hex');
 });

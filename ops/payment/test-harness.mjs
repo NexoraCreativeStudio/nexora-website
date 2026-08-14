@@ -151,7 +151,7 @@ async function testSharedStorage() {
   });
 
   await runTest('storage: file adapter LOCAL_TEST', async () => {
-    const storage = createStorageAdapter({
+    const storage = await createStorageAdapter({
       environment: 'TEST',
       config: { baseDir: '/tmp/nexora-test-harness-' + Date.now() }
     });

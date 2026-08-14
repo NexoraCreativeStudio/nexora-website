@@ -1,5 +1,6 @@
-/* Nexora — Request Limits Utility (PROP.14)
-   Shared request-limit enforcement for payment endpoints. */
+/* Nexora — Request Limits Utility (PROP.14/16)
+   Shared request-limit enforcement for payment endpoints.
+   Supports both Node.js request objects and Cloudflare Workers Request API. */
 
 import { ERROR_CODES, sendErrorResponse } from './error-contract.mjs';
 
@@ -12,8 +13,25 @@ export const DEFAULT_LIMITS = {
   maxCorrelationIdLength: 128,
 };
 
-/* Parse JSON body with size limit */
+/* Detect request environment */
+function isCloudflareRequest(req) {
+  return req && typeof req.arrayBuffer === 'function' && typeof req.clone === 'function';
+}
+
+function isNodeRequest(req) {
+  return req && typeof req.on === 'function' && typeof req.destroy === 'function';
+}
+
+/* Parse JSON body with size limit - supports both Node and Cloudflare Workers */
 export async function parseJsonBody(req, maxSize = DEFAULT_LIMITS.maxJsonBodySize) {
+  if (isCloudflareRequest(req)) {
+    return parseJsonBodyCloudflare(req, maxSize);
+  }
+  return parseJsonBodyNode(req, maxSize);
+}
+
+/* Node.js implementation */
+function parseJsonBodyNode(req, maxSize) {
   return new Promise((resolve, reject) => {
     let total = 0;
     const chunks = [];
@@ -48,8 +66,45 @@ export async function parseJsonBody(req, maxSize = DEFAULT_LIMITS.maxJsonBodySiz
   });
 }
 
-/* Parse raw webhook body with size limit */
+/* Cloudflare Workers implementation */
+async function parseJsonBodyCloudflare(req, maxSize) {
+  try {
+    // Clone to avoid consuming body
+    const clonedReq = req.clone();
+    const arrayBuffer = await clonedReq.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+
+    if (bytes.length > maxSize) {
+      throw { code: ERROR_CODES.REQUEST_TOO_LARGE, message: `JSON body exceeds ${maxSize} bytes` };
+    }
+
+    const raw = new TextDecoder('utf8').decode(bytes);
+    if (!raw.trim()) {
+      return {};
+    }
+
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      throw { code: ERROR_CODES.INVALID_JSON, message: 'Invalid JSON payload' };
+    }
+  } catch (err) {
+    if (err.code) throw err;
+    throw { code: ERROR_CODES.INTERNAL_ERROR, message: `Request error: ${err.message}` };
+  }
+}
+
+/* Parse raw webhook body with size limit - supports both Node and Cloudflare Workers
+   Returns exact bytes without JSON reserialization for signature verification. */
 export async function parseRawBody(req, maxSize = DEFAULT_LIMITS.maxRawWebhookSize) {
+  if (isCloudflareRequest(req)) {
+    return parseRawBodyCloudflare(req, maxSize);
+  }
+  return parseRawBodyNode(req, maxSize);
+}
+
+/* Node.js implementation - returns Buffer */
+function parseRawBodyNode(req, maxSize) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let total = 0;
@@ -73,6 +128,40 @@ export async function parseRawBody(req, maxSize = DEFAULT_LIMITS.maxRawWebhookSi
       reject({ code: ERROR_CODES.INTERNAL_ERROR, message: `Request error: ${err.message}` });
     });
   });
+}
+
+/* Cloudflare Workers implementation - returns Uint8Array (exact bytes) */
+async function parseRawBodyCloudflare(req, maxSize) {
+  try {
+    // Clone to avoid consuming body - critical for not reading twice
+    const clonedReq = req.clone();
+    const arrayBuffer = await clonedReq.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+
+    if (bytes.length > maxSize) {
+      throw { code: ERROR_CODES.REQUEST_TOO_LARGE, message: `Raw body exceeds ${maxSize} bytes` };
+    }
+
+    // Return Uint8Array directly - exact bytes preserved
+    return bytes;
+  } catch (err) {
+    if (err.code) throw err;
+    throw { code: ERROR_CODES.INTERNAL_ERROR, message: `Request error: ${err.message}` };
+  }
+}
+
+/* Unified raw body to string helper - preserves exact bytes */
+export function rawBodyToString(rawBody) {
+  if (rawBody instanceof Uint8Array) {
+    return new TextDecoder('utf8').decode(rawBody);
+  }
+  if (Buffer.isBuffer(rawBody)) {
+    return rawBody.toString('utf8');
+  }
+  if (typeof rawBody === 'string') {
+    return rawBody;
+  }
+  throw new Error('Unsupported raw body type');
 }
 
 /* Validate session ID format */
@@ -124,11 +213,17 @@ export function validateCorrelationId(correlationId, maxLength = DEFAULT_LIMITS.
 
 /* Create safe response headers */
 export function setSafeResponseHeaders(res, correlationId) {
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  if (correlationId) {
-    res.setHeader('X-Correlation-Id', correlationId);
+  // Handle both Node.js and Cloudflare Workers response objects
+  const setHeader = res.setHeader || res.headers?.set?.bind(res.headers);
+  const status = res.status || res.statusCode;
+
+  if (setHeader) {
+    setHeader('Content-Type', 'application/json');
+    setHeader('Cache-Control', 'no-store');
+    setHeader('X-Content-Type-Options', 'nosniff');
+    if (correlationId) {
+      setHeader('X-Correlation-Id', correlationId);
+    }
   }
 }
 
@@ -137,16 +232,28 @@ export function setCorsHeaders(res, config) {
   if (!config.allowed_origins) return;
 
   const origins = config.allowed_origins.split(',').map(o => o.trim());
-  // Note: actual origin matching happens per-request in handler
-  // This just sets the default allowed methods/headers
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Stripe-Signature, X-Correlation-Id');
+  const setHeader = res.setHeader || res.headers?.set?.bind(res.headers);
+
+  if (setHeader) {
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Stripe-Signature, X-Correlation-Id');
+  }
 }
 
 /* Handle preflight */
 export function handlePreflight(req, res) {
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
+    const setHeader = res.setHeader || res.headers?.set?.bind(res.headers);
+    if (setHeader) {
+      setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      setHeader('Access-Control-Allow-Headers', 'Content-Type, Stripe-Signature, X-Correlation-Id');
+    }
+    if (res.status) {
+      res.status(200).end();
+    } else {
+      res.statusCode = 200;
+      res.end();
+    }
     return true;
   }
   return false;
@@ -157,7 +264,7 @@ export function createRequestValidator(opts = {}) {
   const limits = { ...DEFAULT_LIMITS, ...opts.limits };
 
   return async function validateRequest(req, res, next) {
-    const correlationId = req.headers['x-correlation-id'] || req.headers['x-request-id'] || generateCorrelationId();
+    const correlationId = req.headers?.['x-correlation-id'] || req.headers?.['x-request-id'] || generateCorrelationId();
     req.correlationId = correlationId;
 
     setSafeResponseHeaders(res, correlationId);
@@ -179,9 +286,27 @@ export function createRequestValidator(opts = {}) {
   };
 }
 
-/* Generate correlation ID */
+/* Generate correlation ID - works in both Node and Workers */
 function generateCorrelationId() {
   const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+  } else if (typeof require !== 'undefined') {
+    // Node.js fallback
+    const { randomBytes } = require('node:crypto');
+    const nodeBytes = randomBytes(16);
+    bytes.set(nodeBytes);
+  } else {
+    // Fallback - not cryptographically secure
+    for (let i = 0; i < bytes.length; i++) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+  }
   return `req-${Buffer.from(bytes).toString('base64url')}`;
+}
+
+/* Convert raw body to string for signature verification
+   Handles both Node Buffer and Cloudflare Uint8Array */
+export function toStringForSignature(rawBody) {
+  return rawBodyToString(rawBody);
 }

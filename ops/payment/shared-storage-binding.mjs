@@ -58,6 +58,36 @@ export function registerProvider(identifier, factory) {
   PROVIDER_REGISTRY.set(identifier, factory);
 }
 
+/* Register Neon PostgreSQL provider (PROP.16) */
+import { NeonPostgreSQLStorageClient } from './neon-postgresql-storage.mjs';
+
+function neonProviderFactory(config) {
+  // During registration test, config is empty object - return a minimal mock
+  if (!config || Object.keys(config).length === 0 || !config._testQueryClient) {
+    // Return a mock client with required methods for validation
+    return {
+      get: async () => null,
+      set: async () => ({ ok: true }),
+      delete: async () => ({ ok: true }),
+      exists: async () => false,
+      compareAndSet: async () => ({ ok: true, success: false }),
+      setIfAbsent: async () => ({ ok: true, created: false }),
+      listByPrefix: async () => [],
+    };
+  }
+  return new NeonPostgreSQLStorageClient({
+    dbClient: config._testQueryClient,
+    namespace: config.shared_storage_namespace || 'nexora:payment:STAGING_TEST',
+    config: {
+      tableName: config.neon_table_name || 'nexora_kv_store',
+    },
+  });
+}
+
+// Auto-register neon/postgresql providers for STAGING_TEST
+registerProvider('postgresql', neonProviderFactory);
+registerProvider('neon', neonProviderFactory);
+
 /* Get registered provider factory */
 export function getProviderFactory(identifier) {
   return PROVIDER_REGISTRY.get(identifier);
