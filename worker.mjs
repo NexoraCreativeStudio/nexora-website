@@ -1,6 +1,6 @@
-/* Nexora — Cloudflare Workers Entry Point (PROP.17 HOTFIX 5)
-   Route-first initialization: config → route → lazy handler import.
-   No payment handlers loaded for unknown routes.
+/* Nexora — Cloudflare Workers Entry Point (PROP.17 HOTFIX 6)
+   Route-before-config: URL → route → lightweight config → 404/405 → full config → handler.
+   Unknown routes return 404 WITHOUT validating payment/storage/Stripe secrets.
    Logger initialized from Cloudflare env bindings. */
 
 import { buildConfigFromEnv, DEPLOYMENT_ENVIRONMENTS } from './ops/payment/deployment-config.mjs';
@@ -12,11 +12,11 @@ import { SafeLogger } from './ops/payment/structured-logging.mjs';
 
 /* Route map - exact path matching only */
 const ROUTES = [
-  { path: '/api/payment/health', handler: 'health', allowedMethods: ['GET'] },
-  { path: '/api/payment/readiness', handler: 'readiness', allowedMethods: ['GET'] },
-  { path: '/api/payment/checkout-create', handler: 'checkout-create', allowedMethods: ['POST'] },
-  { path: '/api/payment/status', handler: 'status', allowedMethods: ['GET'] },
-  { path: '/api/payment/webhook', handler: 'webhook', allowedMethods: ['POST'] },
+  { path: '/api/payment/health', handler: 'health', allowedMethods: ['GET', 'OPTIONS'], requiresFullConfig: false },
+  { path: '/api/payment/readiness', handler: 'readiness', allowedMethods: ['GET', 'OPTIONS'], requiresFullConfig: true },
+  { path: '/api/payment/checkout-create', handler: 'checkout-create', allowedMethods: ['POST', 'OPTIONS'], requiresFullConfig: true },
+  { path: '/api/payment/status', handler: 'status', allowedMethods: ['GET', 'OPTIONS'], requiresFullConfig: true },
+  { path: '/api/payment/webhook', handler: 'webhook', allowedMethods: ['POST', 'OPTIONS'], requiresFullConfig: true },
 ];
 
 /* Lazy handler cache */
@@ -37,6 +37,18 @@ function matchRoute(path) {
     if (route.path === path) return route;
   }
   return null;
+}
+
+/* Lightweight config for routing/preflight - extracts only runtime values needed before full validation */
+function buildLightweightConfig(env) {
+  return {
+    environment: env.PAYMENT_RUNTIME_ENV || env.DEPLOYMENT_ENV || 'LOCAL_TEST',
+    allowed_origins: env.ALLOWED_ORIGINS || 'https://localhost:3000',
+    log_level: env.LOG_LEVEL || 'info',
+    deployment_id: env.DEPLOYMENT_ID || 'unknown',
+    stripe_mode: env.STRIPE_MODE || 'TEST',
+    max_raw_webhook_size: parseInt(env.MAX_RAW_WEBHOOK_SIZE, 10) || 1048576,
+  };
 }
 
 /* Cloudflare Workers Response adapter */
@@ -192,7 +204,7 @@ async function handleWebhook(request, env, config, correlationId, logger, resAda
   return resAdapter.toResponse();
 }
 
-/* Main Workers fetch handler - ROUTE-FIRST INITIALIZATION */
+/* Main Workers fetch handler - ROUTE-BEFORE-CONFIG INITIALIZATION */
 export default {
   async fetch(request, env, ctx) {
     // 1. Correlation ID
@@ -200,21 +212,14 @@ export default {
                           request.headers.get('x-request-id') ||
                           generateCorrelationId();
 
-    // 2. Build config from Cloudflare env (fails closed for STAGING_TEST if bindings missing)
-    const config = buildConfigFromEnv(env);
-
-    // 3. URL/path extraction
+    // 2. URL/path extraction
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // 4. Route matching
+    // 3. Route matching
     const route = matchRoute(path);
 
-    // 5. CORS preflight (uses config from step 2)
-    const corsResponse = handlePreflightCf(request, config);
-    if (corsResponse) return corsResponse;
-
-    // 6. If route missing -> immediate safe 404 (NO handler imports, NO storage init)
+    // 4. If route missing -> immediate safe 404 (NO config validation, NO handler imports, NO storage init)
     if (!route) {
       return new Response(JSON.stringify({
         error: { code: 'NOT_FOUND', message: 'Route not found', request_id: correlationId }
@@ -229,7 +234,7 @@ export default {
       });
     }
 
-    // 7. Method validation -> safe 405
+    // 5. Method validation -> safe 405 (NO config validation needed)
     const allowed = route.allowedMethods || [];
     if (!allowed.includes(request.method)) {
       return new Response(JSON.stringify({
@@ -246,11 +251,50 @@ export default {
       });
     }
 
-    // 8. Create logger from Cloudflare env (not process.env)
+    // 6. Lightweight config for preflight/CORS (no secret validation)
+    const lightConfig = buildLightweightConfig(env);
+
+    // 7. CORS preflight (uses lightweight config)
+    const corsResponse = handlePreflightCf(request, lightConfig);
+    if (corsResponse) return corsResponse;
+
+    // 8. Only NOW build full config for routes that require it
+    let config;
+    if (route.requiresFullConfig) {
+      config = buildConfigFromEnv(env);
+    } else {
+      // For routes like /health that don't need full config, merge lightweight with minimal defaults
+      config = {
+        ...lightConfig,
+        schema: 'nexora-payment-deployment/v1',
+        deployment_id: lightConfig.deployment_id,
+        release_sha: env.RELEASE_SHA || 'unknown',
+        payments_enabled: env.PAYMENTS_ENABLED === 'true',
+        staging_payment_enabled: env.STAGING_PAYMENT_ENABLED === 'true',
+        production_payment_enabled: env.PRODUCTION_PAYMENT_ENABLED === 'true',
+        stripe_secret_key: 'sk_test_PLACEHOLDER_REPLACE_WITH_REAL_TEST_KEY',
+        stripe_webhook_secret: 'whsec_PLACEHOLDER_REPLACE_WITH_REAL_TEST_SECRET',
+        stripe_publishable_key: 'pk_test_PLACEHOLDER_REPLACE_WITH_REAL_TEST_KEY',
+        public_base_url: env.PUBLIC_BASE_URL || 'https://localhost:3000',
+        payment_api_base_url: env.PAYMENT_API_BASE_URL || 'https://localhost:3000',
+        stripe_success_url: env.STRIPE_SUCCESS_URL || 'https://localhost:3000/payment/success?session_id={CHECKOUT_SESSION_ID}',
+        stripe_cancel_url: env.STRIPE_CANCEL_URL || 'https://localhost:3000/payment/cancel',
+        shared_storage_provider: 'memory',
+        shared_storage_namespace: 'nexora/payment/LOCAL_TEST',
+        allowed_origins: lightConfig.allowed_origins,
+        max_json_body_size: parseInt(env.MAX_JSON_BODY_SIZE, 10) || 1048576,
+        stripe_api_version: env.STRIPE_API_VERSION || '2024-06-20',
+        webhook_tolerance_seconds: parseInt(env.WEBHOOK_TOLERANCE_SECONDS, 10) || 300,
+        idempotency_ttl_seconds: parseInt(env.IDEMPOTENCY_TTL_SECONDS, 10) || 86400,
+        reconciliation_tolerance_pence: parseInt(env.RECONCILIATION_TOLERANCE_PENCE, 10) || 0,
+      };
+    }
+
+    // 9. Create logger from Cloudflare env (not process.env) - uses correct environment
     const logger = createLogger(env, correlationId);
     const startTime = Date.now();
 
-    // 9. Create request/response adapters
+    // 10. Create request/response adapters
     const reqAdapter = createRequestAdapter(request, env);
     reqAdapter.params = {}; // exact matching, no params
     reqAdapter.config = config; // Pass config so handlers don't re-read env
@@ -266,7 +310,7 @@ export default {
       }
     }
 
-    // 10. ONLY NOW lazily import the single required handler
+    // 11. ONLY NOW lazily import the single required handler
     try {
       switch (route.handler) {
         case 'health': {
