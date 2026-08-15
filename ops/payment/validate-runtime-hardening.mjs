@@ -46,7 +46,7 @@ import {
   createStorageAdapter,
   ProductionStorageAdapter,
   validateStorageAdapter,
-  PRIVATE_DIR
+  getPrivateDir
 } from './runtime-storage.mjs';
 import { TestFileStorageAdapter } from './runtime-storage-file-node.mjs';
 
@@ -118,7 +118,7 @@ const exampleRequest = JSON.parse(
 console.log('\n=== PROP.12 RUNTIME STORAGE TESTS ===\n');
 
 runTest('STORAGE: TestFileStorageAdapter creates session', async () => {
-  const adapter = new TestFileStorageAdapter({ baseDir: join(PRIVATE_DIR, 'test-runtime') });
+  const adapter = new TestFileStorageAdapter({ baseDir: join(await getPrivateDir(), 'test-runtime') });
   const session = {
     schema: PORTAL_SESSION_SCHEMA,
     session_id: 'PSS-TESTSTORAGE00000000000000000000000000000000000000000000',
@@ -152,7 +152,7 @@ runTest('STORAGE: TestFileStorageAdapter creates session', async () => {
 });
 
 runTest('STORAGE: TestFileStorageAdapter updates session', async () => {
-  const adapter = new TestFileStorageAdapter({ baseDir: join(PRIVATE_DIR, 'test-runtime') });
+  const adapter = new TestFileStorageAdapter({ baseDir: join(await getPrivateDir(), 'test-runtime') });
   const session = {
     schema: PORTAL_SESSION_SCHEMA,
     session_id: 'PSS-TESTSTORAGE00000000000000000000000000000000000000000001',
@@ -190,7 +190,7 @@ runTest('STORAGE: TestFileStorageAdapter updates session', async () => {
 });
 
 runTest('STORAGE: TestFileStorageAdapter findSessionByCheckoutSessionId', async () => {
-  const adapter = new TestFileStorageAdapter({ baseDir: join(PRIVATE_DIR, 'test-runtime') });
+  const adapter = new TestFileStorageAdapter({ baseDir: join(await getPrivateDir(), 'test-runtime') });
   const session = {
     schema: PORTAL_SESSION_SCHEMA,
     session_id: 'PSS-TESTSTORAGE00000000000000000000000000000000000000000002',
@@ -220,7 +220,7 @@ runTest('STORAGE: TestFileStorageAdapter findSessionByCheckoutSessionId', async 
 });
 
 runTest('STORAGE: TestFileStorageAdapter creates payment record', async () => {
-  const adapter = new TestFileStorageAdapter({ baseDir: join(PRIVATE_DIR, 'test-runtime') });
+  const adapter = new TestFileStorageAdapter({ baseDir: join(await getPrivateDir(), 'test-runtime') });
   const payment = {
     schema: PAYMENT_SCHEMA,
     payment_id: 'PAY-2026-9898-002',
@@ -249,7 +249,7 @@ runTest('STORAGE: TestFileStorageAdapter creates payment record', async () => {
 });
 
 runTest('STORAGE: TestFileStorageAdapter idempotency check/set', async () => {
-  const adapter = new TestFileStorageAdapter({ baseDir: join(PRIVATE_DIR, 'test-runtime') });
+  const adapter = new TestFileStorageAdapter({ baseDir: join(await getPrivateDir(), 'test-runtime') });
 
   const check1 = await adapter.checkIdempotency('idem-key-test-001');
   assert(check1.exists === false, 'idempotency key initially does not exist');
@@ -262,7 +262,7 @@ runTest('STORAGE: TestFileStorageAdapter idempotency check/set', async () => {
 });
 
 runTest('STORAGE: createStorageAdapter factory returns TEST adapter for TEST env', async () => {
-  const adapter = await createStorageAdapter({ environment: 'TEST', config: { baseDir: join(PRIVATE_DIR, 'test-factory') } });
+  const adapter = await createStorageAdapter({ environment: 'TEST', config: { baseDir: join(await getPrivateDir(), 'test-factory') } });
   assert(adapter instanceof TestFileStorageAdapter, 'returns TestFileStorageAdapter for TEST');
   const validation = validateStorageAdapter(adapter, 'TEST');
   assert(validation.ok, 'validateStorageAdapter passes for TEST adapter');
@@ -275,8 +275,8 @@ runTest('STORAGE: createStorageAdapter factory throws for PRODUCTION without con
   );
 });
 
-runTest('STORAGE: validateStorageAdapter rejects TestFileStorageAdapter in PRODUCTION', () => {
-  const adapter = new TestFileStorageAdapter();
+runTest('STORAGE: validateStorageAdapter rejects TestFileStorageAdapter in PRODUCTION', async () => {
+  const adapter = new TestFileStorageAdapter({ baseDir: join(await getPrivateDir(), 'test-reject') });
   const validation = validateStorageAdapter(adapter, 'PRODUCTION');
   assert(!validation.ok, 'rejects TEST adapter in PRODUCTION');
   assert(validation.reason.includes('TestFileStorageAdapter'), 'reason mentions adapter name');
@@ -284,8 +284,8 @@ runTest('STORAGE: validateStorageAdapter rejects TestFileStorageAdapter in PRODU
 
 runTest('STORAGE: State shared/recoverable through configured adapter (not handler-local Map)', async () => {
   // Simulate two separate "handler instances" using same adapter
-  const adapter1 = new TestFileStorageAdapter({ baseDir: join(PRIVATE_DIR, 'test-shared') });
-  const adapter2 = new TestFileStorageAdapter({ baseDir: join(PRIVATE_DIR, 'test-shared') });
+  const adapter1 = new TestFileStorageAdapter({ baseDir: join(await getPrivateDir(), 'test-shared') });
+  const adapter2 = new TestFileStorageAdapter({ baseDir: join(await getPrivateDir(), 'test-shared') });
 
   const session = {
     schema: PORTAL_SESSION_SCHEMA,
@@ -531,7 +531,7 @@ runTest('INTEGRATION: Complete flow uses storage adapter (no handler-local Map)'
   // This test simulates the API handlers using the storage adapter
   // instead of in-memory Maps
 
-  const storage = new TestFileStorageAdapter({ baseDir: join(PRIVATE_DIR, 'test-integration') });
+  const storage = new TestFileStorageAdapter({ baseDir: join(await getPrivateDir(), 'test-integration') });
   const verifier = new TestDeterministicVerifier();
 
   // 1. Create token
