@@ -4,15 +4,45 @@
    TEST adapter uses deterministic file storage (Node-only, separate module).
    PRODUCTION requires explicit shared persistent storage adapter — fails closed if unavailable. */
 
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+/* Path constants are lazily initialized to avoid top-level fileURLToPath(import.meta.url)
+   execution which fails in Cloudflare Workers bundling (validation error 10021).
+   These are only used by Node-only TEST file adapter (runtime-storage-file-node.mjs). */
+let _PRIVATE_DIR = null;
+let _OUT_DIR = null;
+let _require = null;
 
-/* __dirname is ops/payment/ — derive project paths from it correctly. */
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PAYMENT_DIR = __dirname;
-const OPS_DIR = dirname(PAYMENT_DIR);
-const PRIVATE_DIR = join(PAYMENT_DIR, 'private');
-const OUT_DIR = join(PAYMENT_DIR, 'out');
+async function getNodeRequire() {
+  if (_require !== null) return _require;
+  // In ES modules, require is not available by default.
+  // Use createRequire to get a require function that works in ES modules.
+  // This only runs in Node.js context (TEST environment).
+  const { createRequire } = await import('module');
+  _require = createRequire(import.meta.url);
+  return _require;
+}
+
+async function initNodePaths() {
+  if (_PRIVATE_DIR !== null) return;
+  // This function only runs in Node.js context (TEST environment)
+  // Dynamic import to avoid bundling node:url/node:path in Workers
+  const require = getNodeRequire();
+  const { fileURLToPath } = require('node:url');
+  const { join, dirname } = require('node:path');
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const PAYMENT_DIR = __dirname;
+  _PRIVATE_DIR = join(PAYMENT_DIR, 'private');
+  _OUT_DIR = join(PAYMENT_DIR, 'out');
+}
+
+async function getPrivateDir() {
+  await initNodePaths();
+  return _PRIVATE_DIR;
+}
+
+async function getOutDir() {
+  await initNodePaths();
+  return _OUT_DIR;
+}
 
 export const STORAGE_SCHEMA = 'nexora-payment-storage/v1';
 export const STORAGE_ADAPTERS = ['TEST_FILE', 'PRODUCTION_SHARED'];
@@ -238,7 +268,7 @@ export function createStorageAdapter(opts = {}) {
 async function createTestFileStorageAdapter(opts = {}) {
   const { TestFileStorageAdapter } = await import('./runtime-storage-file-node.mjs');
   return new TestFileStorageAdapter({
-    baseDir: opts.config?.baseDir || PRIVATE_DIR,
+    baseDir: opts.config?.baseDir || await getPrivateDir(),
   });
 }
 
@@ -256,9 +286,25 @@ export function createStorageAdapterSync(opts = {}) {
   // TEST/SANDBOX — use Node-only file adapter
   // This import path will fail in Cloudflare Workers (as intended - TEST environment shouldn't run there)
   const { TestFileStorageAdapter } = require('./runtime-storage-file-node.mjs');
+  // getPrivateDir is now async, but this sync function only runs in Node.js TEST context
+  // where initNodePaths has already run or will run synchronously via require
   return new TestFileStorageAdapter({
-    baseDir: opts.config?.baseDir || PRIVATE_DIR,
+    baseDir: opts.config?.baseDir || _PRIVATE_DIR || getPrivateDirSync(),
   });
+}
+
+function getPrivateDirSync() {
+  if (_PRIVATE_DIR !== null) return _PRIVATE_DIR;
+  // Synchronous initialization for createStorageAdapterSync
+  const { createRequire } = require('module');
+  const req = createRequire(import.meta.url);
+  const { fileURLToPath } = req('node:url');
+  const { join, dirname } = req('node:path');
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const PAYMENT_DIR = __dirname;
+  _PRIVATE_DIR = join(PAYMENT_DIR, 'private');
+  _OUT_DIR = join(PAYMENT_DIR, 'out');
+  return _PRIVATE_DIR;
 }
 
 /* ------------------------------------------------------------------ */
@@ -285,4 +331,4 @@ export function validateStorageAdapter(adapter, environment) {
   return { ok: true };
 }
 
-export { PRIVATE_DIR, OUT_DIR };
+export { getPrivateDir, getOutDir };

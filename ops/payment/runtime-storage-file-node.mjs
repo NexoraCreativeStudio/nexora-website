@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlink
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
-import { PaymentStorageAdapter, PRIVATE_DIR, OUT_DIR } from './runtime-storage.mjs';
+import { PaymentStorageAdapter, getPrivateDir, getOutDir } from './runtime-storage.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PAYMENT_DIR = __dirname;
@@ -17,7 +17,7 @@ const PAYMENT_DIR = __dirname;
 export class TestFileStorageAdapter extends PaymentStorageAdapter {
   constructor(opts = {}) {
     super({ environment: 'TEST', config: opts.config || {} });
-    this.baseDir = opts.baseDir || PRIVATE_DIR;
+    this.baseDir = opts.baseDir || getPrivateDir();
     this.ensureDirs();
   }
 
@@ -156,6 +156,3 @@ export class TestFileStorageAdapter extends PaymentStorageAdapter {
     return 'TestFileStorageAdapter';
   }
 }
-
-/* Export path constants for compatibility */
-export { PRIVATE_DIR, OUT_DIR };
