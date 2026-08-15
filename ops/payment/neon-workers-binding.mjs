@@ -1,28 +1,102 @@
-/* Nexora — Neon PostgreSQL Shared Storage Client (PROP.16)
-   Provider-specific adapter implementing SharedStorageClient contract for Neon PostgreSQL.
-   Implements atomic compareAndSet and setIfAbsent using PostgreSQL transaction semantics.
-   No real connection required for offline validators — supports injection of mock client. */
+/* Nexora — Neon PostgreSQL Workers Runtime Binding (PROP.17)
+   Cloudflare Workers-compatible Neon PostgreSQL client using @neondatabase/serverless.
+   Implements SharedStorageClient contract for STAGING_TEST deployment.
+   No real connection in validators — supports mock injection for offline testing. */
 
 import { SharedStorageClient } from './runtime-storage.mjs';
 
-/* Neon PostgreSQL Shared Storage Client
-   Implements the provider-neutral SharedStorageClient contract using
-   PostgreSQL-compatible atomic operations. */
-export class NeonPostgreSQLStorageClient extends SharedStorageClient {
+/* Neon Workers Client
+   Wraps @neondatabase/serverless for Cloudflare Workers compatibility.
+   Provides query interface matching NeonPostgreSQLStorageClient expectations. */
+export class NeonWorkersClient {
   /**
    * @param {Object} opts
-   * @param {Object} opts.dbClient - Database client with query method (or mock for tests)
-   * @param {string} opts.namespace - Namespace prefix for key isolation (e.g., 'nexora:payment:STAGING_TEST')
+   * @param {string} opts.connectionString - Neon connection string (from env binding)
+   * @param {Object|Function} opts.mockQueryClient - Optional mock for offline testing (object with query method, or query function)
+   */
+  constructor(opts = {}) {
+    this.connectionString = opts.connectionString;
+    this.mockQueryClient = opts.mockQueryClient;
+    this._sql = null;
+    this._initialized = false;
+  }
+
+  /* Initialize the Neon serverless client (lazy) */
+  async _init() {
+    if (this._initialized) return;
+
+    if (this.mockQueryClient) {
+      // Offline testing mode - use injected mock
+      // Support both object with query method and direct query function
+      this._sql = typeof this.mockQueryClient === 'function'
+        ? this.mockQueryClient
+        : this.mockQueryClient.query.bind(this.mockQueryClient);
+      this._initialized = true;
+      return;
+    }
+
+    if (!this.connectionString) {
+      throw new Error('NeonWorkersClient requires connectionString or mockQueryClient');
+    }
+
+    // Dynamic import to avoid bundling issues in non-Workers environments
+    const { neon } = await import('@neondatabase/serverless');
+    this._sql = neon(this.connectionString);
+    this._initialized = true;
+  }
+
+  /* Execute a query - compatible with NeonPostgreSQLStorageClient expectations */
+  async query(sql, params = []) {
+    await this._init();
+
+    if (!this._sql || typeof this._sql !== 'function') {
+      throw new Error('Neon client not initialized');
+    }
+
+    try {
+      // @neondatabase/serverless returns array of rows directly
+      // Mock query client also returns array of rows directly
+      const result = await this._sql(sql, params);
+      return Array.isArray(result) ? { rows: result, rowCount: result.length } : result;
+    } catch (err) {
+      throw new Error(`Neon query failed: ${err.message}`);
+    }
+  }
+
+  /* Close connection (no-op for serverless) */
+  async close() {
+    // Serverless driver doesn't need explicit close
+    return { ok: true };
+  }
+
+  /* Health check */
+  async healthCheck() {
+    try {
+      await this.query('SELECT 1');
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, reason: err.message };
+    }
+  }
+}
+
+/* Neon PostgreSQL Storage Client for Workers
+   Implements SharedStorageClient contract using NeonWorkersClient. */
+export class NeonWorkersPostgreSQLStorageClient extends SharedStorageClient {
+  /**
+   * @param {Object} opts
+   * @param {NeonWorkersClient} opts.dbClient - NeonWorkersClient instance
+   * @param {string} opts.namespace - Namespace prefix (e.g., 'nexora:payment:STAGING_TEST')
    * @param {Object} opts.config - Additional configuration
    */
   constructor(opts = {}) {
     super();
 
     if (!opts.dbClient || typeof opts.dbClient.query !== 'function') {
-      throw new Error('NeonPostgreSQLStorageClient requires dbClient with query method');
+      throw new Error('NeonWorkersPostgreSQLStorageClient requires dbClient with query method');
     }
     if (!opts.namespace || typeof opts.namespace !== 'string') {
-      throw new Error('NeonPostgreSQLStorageClient requires namespace string');
+      throw new Error('NeonWorkersPostgreSQLStorageClient requires namespace string');
     }
 
     this.dbClient = opts.dbClient;
@@ -155,7 +229,6 @@ export class NeonPostgreSQLStorageClient extends SharedStorageClient {
     );
 
     return result.rows.map(row => {
-      // Strip namespace prefix from returned keys
       const fullKey = row.key;
       if (fullKey.startsWith(this.namespace + ':')) {
         return fullKey.slice(this.namespace.length + 1);
@@ -165,108 +238,45 @@ export class NeonPostgreSQLStorageClient extends SharedStorageClient {
   }
 
   getClientType() {
-    return 'NeonPostgreSQLStorageClient';
+    return 'NeonWorkersPostgreSQLStorageClient';
   }
 
-  /* Health check - tests basic connectivity */
+  /* Health check */
   async healthCheck() {
-    try {
-      await this.dbClient.query('SELECT 1');
-      return { ok: true };
-    } catch (err) {
-      return { ok: false, reason: err.message };
-    }
+    return await this.dbClient.healthCheck();
   }
 }
 
-/* SQL Schema for Neon PostgreSQL
-   Run this migration in Neon to create the required table.
-   No credentials required — offline schema artifact. */
-export const NEON_SCHEMA_SQL = `
--- Nexora Payment KV Store Schema for Neon PostgreSQL
--- Supports SharedStorageClient contract with atomic CAS and setIfAbsent
--- Namespace isolation via composite primary key
-
-CREATE TABLE IF NOT EXISTS nexora_kv_store (
-  namespace TEXT NOT NULL,
-  key TEXT NOT NULL,
-  value JSONB NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (namespace, key)
-);
-
--- Index for prefix listing
-CREATE INDEX IF NOT EXISTS idx_nexora_kv_store_namespace_key_prefix
-ON nexora_kv_store (namespace, key);
-
--- Function for updated_at trigger
-CREATE OR REPLACE FUNCTION update_nexora_kv_store_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger for automatic updated_at
-DROP TRIGGER IF EXISTS trigger_update_nexora_kv_store_updated_at ON nexora_kv_store;
-CREATE TRIGGER trigger_update_nexora_kv_store_updated_at
-  BEFORE UPDATE ON nexora_kv_store
-  FOR EACH ROW EXECUTE FUNCTION update_nexora_kv_store_updated_at();
-`;
-
-/* Neon connection abstraction for Cloudflare Workers compatibility.
-   Do not open real connection — supports injection of query client.
-   Compatible with Neon serverless/HTTP driver interface. */
-export class NeonConnection {
-  /**
-   * @param {Object} opts
-   * @param {string} opts.connectionString - Neon connection string (not used directly, for reference)
-   * @param {Object} opts.queryClient - Optional pre-configured query client (for Workers HTTP driver)
-   */
-  constructor(opts = {}) {
-    this.connectionString = opts.connectionString;
-    this.queryClient = opts.queryClient;
-  }
-
-  /* Execute a query - delegates to injected queryClient or throws if not configured */
-  async query(sql, params = []) {
-    if (!this.queryClient || typeof this.queryClient.query !== 'function') {
-      throw new Error('NeonConnection requires queryClient with query method');
-    }
-    return this.queryClient.query(sql, params);
-  }
-
-  /* Close connection (no-op for serverless/HTTP driver) */
-  async close() {
-    // Serverless/HTTP driver doesn't need explicit close
-    return { ok: true };
-  }
-}
-
-/* Factory for creating Neon client from deployment config */
-export function createNeonClient(config) {
+/* Factory for creating Neon Workers client from deployment config */
+export async function createNeonWorkersClient(config) {
   const provider = config.shared_storage_provider;
-  if (provider !== 'postgresql' && provider !== 'neon') {
-    throw new Error(`createNeonClient requires provider 'postgresql' or 'neon', got '${provider}'`);
+  // Accept both Workers-specific providers and generic ones
+  const validProviders = ['postgresql', 'neon', 'postgresql-workers', 'neon-workers'];
+  if (!validProviders.includes(provider)) {
+    throw new Error(`createNeonWorkersClient requires provider 'postgresql', 'neon', 'postgresql-workers', or 'neon-workers', got '${provider}'`);
   }
 
-  // In real deployment, this would use Neon serverless driver:
-  // import { neon } from '@neondatabase/serverless';
-  // const sql = neon(process.env.DATABASE_URL);
-  // const queryClient = { query: async (sql, params) => sql.query(sql, params) };
+  // Get connection string from env (in Workers, this comes from secret binding)
+  const connectionString = config.neon_database_url || process.env.NEON_DATABASE_URL;
 
-  // For offline/testing, require injection
-  if (!config._testQueryClient) {
-    throw new Error('Neon client requires _testQueryClient for offline testing. Provide a mock query client.');
-  }
+  // For offline testing, allow mock injection
+  const mockQueryClient = config._testQueryClient;
 
-  return new NeonPostgreSQLStorageClient({
-    dbClient: config._testQueryClient,
+  const neonClient = new NeonWorkersClient({
+    connectionString,
+    mockQueryClient,
+  });
+
+  return new NeonWorkersPostgreSQLStorageClient({
+    dbClient: neonClient,
     namespace: config.shared_storage_namespace || 'nexora:payment:STAGING_TEST',
     config: {
       tableName: config.neon_table_name || 'nexora_kv_store',
     },
   });
 }
+
+/* Re-export schema from canonical source */
+export { NEON_SCHEMA_SQL } from './neon-postgresql-storage.mjs';
+
+/* Export for shared-storage-binding integration (createNeonWorkersClient exported at line 243, classes at lines 11/81) */

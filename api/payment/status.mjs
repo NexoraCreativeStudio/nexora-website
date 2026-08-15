@@ -28,8 +28,10 @@ export default async function handler(req, res) {
   // Safe headers
   setSafeResponseHeaders(res, correlationId);
 
+  // Use config from request adapter (injected by worker)
+  const config = req.config || buildConfigFromEnv();
+
   // CORS from config
-  const config = buildConfigFromEnv();
   const origins = config.allowed_origins ? config.allowed_origins.split(',').map(o => o.trim()) : [];
   const requestOrigin = req.headers.origin;
   if (requestOrigin && origins.includes(requestOrigin)) {

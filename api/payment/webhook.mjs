@@ -21,7 +21,8 @@ import { markWebhookReceived, markReconciled } from '../../ops/payment/portal-se
 import { createStorageAdapter } from '../../ops/payment/runtime-storage.mjs';
 import { createBoundProductionStorageAdapter } from '../../ops/payment/shared-storage-binding.mjs';
 import { createWebhookVerifier } from '../../ops/payment/webhook-verifier.mjs';
-import { parseRawBody, setSafeResponseHeaders, handlePreflight, sendErrorResponse, ERROR_CODES } from './request-limits.mjs';
+import { parseRawBody, rawBodyToString, setSafeResponseHeaders, handlePreflight, ERROR_CODES } from './request-limits.mjs';
+import { sendErrorResponse } from './error-contract.mjs';
 import { getDefaultLogger } from '../../ops/payment/structured-logging.mjs';
 import { generateCorrelationId } from '../../ops/payment/structured-logging.mjs';
 
@@ -49,8 +50,10 @@ export default async function handler(req, res) {
   // Safe headers
   setSafeResponseHeaders(res, correlationId);
 
+  // Use config from request adapter (injected by worker)
+  const config = req.config || buildConfigFromEnv();
+
   // CORS from config
-  const config = buildConfigFromEnv();
   const origins = config.allowed_origins ? config.allowed_origins.split(',').map(o => o.trim()) : [];
   const requestOrigin = req.headers.origin;
   if (requestOrigin && origins.includes(requestOrigin)) {
@@ -86,34 +89,52 @@ export default async function handler(req, res) {
     });
   }
 
-  // Parse raw body with size limit (exact bytes for signature verification)
+  // Use pre-parsed raw body and verification from worker (Cloudflare Workers path)
+  // or parse fresh for local/Node.js path
   let rawBody;
-  try {
-    rawBody = await parseRawBody(req, config.max_raw_webhook_size);
-  } catch (err) {
-    return sendErrorResponse(res, err.code, correlationId);
-  }
-
-  const signatureHeader = req.headers['stripe-signature'] || req.headers['Stripe-Signature'];
-  if (!signatureHeader) {
-    logger.logWebhookSignatureMissing({ correlationId });
-    return sendErrorResponse(res, ERROR_CODES.WEBHOOK_SIGNATURE_INVALID, correlationId);
-  }
-
-  // Parse JSON from raw body
   let stripeEvent;
-  try {
-    stripeEvent = JSON.parse(rawBody.toString('utf8'));
-  } catch (e) {
-    logger.logWebhookPayloadInvalid({ correlationId, error: e.message });
-    return sendErrorResponse(res, ERROR_CODES.WEBHOOK_PAYLOAD_INVALID, correlationId);
+  let signatureVerified = false;
+
+  if (req.signatureVerified && req.rawBody) {
+    // Worker path: already parsed and verified
+    rawBody = req.rawBody;
+    stripeEvent = req.webhookEvent || req.body;
+    signatureVerified = true;
+  } else {
+    // Local/Node path: parse fresh
+    try {
+      rawBody = await parseRawBody(req, config.max_raw_webhook_size);
+    } catch (err) {
+      return sendErrorResponse(res, err.code, correlationId);
+    }
+
+    const signatureHeader = req.headers['stripe-signature'] || req.headers['Stripe-Signature'];
+    if (!signatureHeader) {
+      logger.logWebhookSignatureMissing({ correlationId });
+      return sendErrorResponse(res, ERROR_CODES.WEBHOOK_SIGNATURE_INVALID, correlationId);
+    }
+
+    // Parse JSON from raw body
+    try {
+      stripeEvent = JSON.parse(rawBodyToString(rawBody));
+    } catch (e) {
+      logger.logWebhookPayloadInvalid({ correlationId, error: e.message });
+      return sendErrorResponse(res, ERROR_CODES.WEBHOOK_PAYLOAD_INVALID, correlationId);
+    }
+
+    // Verify signature via governed webhook verifier
+    const verifier = createWebhookVerifier({ environment: config.environment, config });
+    const sigResult = await verifier.verify(rawBodyToString(rawBody), signatureHeader, config.stripe_webhook_secret);
+    if (!sigResult.verified) {
+      logger.logWebhookSignatureInvalid({ correlationId, reason: sigResult.reason });
+      return sendErrorResponse(res, ERROR_CODES.WEBHOOK_SIGNATURE_INVALID, correlationId);
+    }
+    signatureVerified = true;
   }
 
-  // Verify signature via governed webhook verifier
-  const verifier = createWebhookVerifier({ environment: config.environment, config });
-  const sigResult = await verifier.verify(rawBody.toString('utf8'), signatureHeader, config.stripe_webhook_secret);
-  if (!sigResult.verified) {
-    logger.logWebhookSignatureInvalid({ correlationId, reason: sigResult.reason });
+  // Ensure signature was verified
+  if (!signatureVerified) {
+    logger.logWebhookSignatureMissing({ correlationId });
     return sendErrorResponse(res, ERROR_CODES.WEBHOOK_SIGNATURE_INVALID, correlationId);
   }
 

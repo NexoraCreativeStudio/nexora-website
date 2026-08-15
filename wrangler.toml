@@ -1,0 +1,61 @@
+# Nexora Payment Staging — Cloudflare Workers Configuration (PROP.17)
+# STAGING_TEST deployment only — no production routes configured
+# Secrets managed externally via Cloudflare dashboard (never committed)
+
+name = "nexora-payment-staging"
+main = "worker.mjs"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Staging-oriented environment variables (never secrets)
+# All payment gates default to FALSE — operator must explicitly enable
+[vars]
+PAYMENT_RUNTIME_ENV = "STAGING_TEST"
+PAYMENTS_ENABLED = "false"
+STAGING_PAYMENT_ENABLED = "false"
+PRODUCTION_PAYMENT_ENABLED = "false"
+STRIPE_MODE = "TEST"
+STRIPE_API_VERSION = "2024-06-20"
+SHARED_STORAGE_PROVIDER = "postgresql"
+SHARED_STORAGE_NAMESPACE = "nexora:payment:STAGING_TEST"
+WEBHOOK_TOLERANCE_SECONDS = "300"
+IDEMPOTENCY_TTL_SECONDS = "86400"
+RECONCILIATION_TOLERANCE_PENCE = "0"
+LOG_LEVEL = "info"
+MAX_JSON_BODY_SIZE = "1048576"
+MAX_RAW_WEBHOOK_SIZE = "1048576"
+PUBLIC_BASE_URL = "https://nexora-payment-staging.nexora-staging.workers.dev"
+PAYMENT_API_BASE_URL = "https://nexora-payment-staging.nexora-staging.workers.dev"
+ALLOWED_ORIGINS = "https://staging.nexora.studio"
+
+# Secret bindings (configured in Cloudflare dashboard, NOT in this file)
+# STRIPE_SECRET_KEY = "sk_test_..." (set via: wrangler secret put STRIPE_SECRET_KEY)
+# STRIPE_WEBHOOK_SECRET = "whsec_..." (set via: wrangler secret put STRIPE_WEBHOOK_SECRET)
+# STRIPE_PUBLISHABLE_KEY = "pk_test_..." (set via: wrangler secret put STRIPE_PUBLISHABLE_KEY)
+# NEON_DATABASE_URL = "postgresql://..." (set via: wrangler secret put NEON_DATABASE_URL)
+
+# D1 database binding for Neon (if using D1 as Neon proxy) - not used, direct Neon HTTP
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "nexora-payment-staging"
+# database_id = "..."
+
+# KV namespace for future use (not used for STAGING_TEST payment storage)
+# [[kv_namespaces]]
+# binding = "PAYMENT_KV"
+# id = "..."
+
+# Workers.dev subdomain (staging-first, no custom domain yet)
+# Deployed to: nexora-payment-staging.nexora-staging.workers.dev
+# Custom domain configuration deferred until staging verification passes
+
+# Build configuration
+# No build step required — worker.mjs is the entry point
+# [build]
+# command = ""
+# watch_dir = "."
+
+# Do NOT enable non-production branch builds
+# Payment staging deploys only from governed main/release flow
+# [triggers]
+# branch = false

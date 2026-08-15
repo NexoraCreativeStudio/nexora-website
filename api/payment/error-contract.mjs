@@ -189,8 +189,13 @@ export const ERROR_STATUS_CODES = {
 /* Send error response */
 export function sendErrorResponse(res, code, requestId, details = null) {
   const statusCode = ERROR_STATUS_CODES[code] || 500;
-  const response = PaymentErrors[code.toLowerCase().replace(/_/g, '')](requestId, details) ||
-                   createErrorResponse(code, 'Error', requestId, details);
+  let response;
+  const factory = PaymentErrors[code.toLowerCase().replace(/_/g, '')];
+  if (typeof factory === 'function') {
+    response = factory(requestId, details);
+  } else {
+    response = createErrorResponse(code, 'Error', requestId, details);
+  }
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Cache-Control', 'no-store');
   return res.status(statusCode).json(response);

@@ -231,13 +231,30 @@ export function validateDeploymentConfig(config) {
     }
   }
 
-  // Secret pattern check
+  // Secret pattern check (runtime: only check for LIVE/production secret patterns)
+  // Test keys (sk_test_, whsec_, pk_test_) are expected in STAGING_TEST/LOCAL_TEST
   const secretFields = ['stripe_secret_key', 'stripe_webhook_secret', 'stripe_publishable_key'];
   for (const field of secretFields) {
     if (config[field]) {
-      for (const pattern of DEPLOYMENT_SECRET_PATTERNS) {
+      // Only check for LIVE/production patterns at runtime
+      // LIVE secret patterns that should never appear in any committed config
+      const livePatterns = [
+        /sk_live_[a-zA-Z0-9]{24,}/,
+        /rk_live_[a-zA-Z0-9]{24,}/,
+        /pk_live_[a-zA-Z0-9]{24,}/,
+        /acct_[a-zA-Z0-9]{16,}/,
+      ];
+      for (const pattern of livePatterns) {
         if (pattern.test(config[field])) {
-          reasons.push(`${field} appears to contain a live or test secret — forbidden in committed config`);
+          reasons.push(`${field} appears to contain a live secret — forbidden`);
+        }
+      }
+      // For STAGING_TEST/LOCAL_TEST, also check for placeholder patterns (should be real values at runtime)
+      if (config.environment !== 'PRODUCTION_DISABLED') {
+        for (const pattern of DEPLOYMENT_PLACEHOLDER_PATTERNS) {
+          if (pattern.test(config[field])) {
+            reasons.push(`${field} appears to be a placeholder — replace with real value for ${config.environment}`);
+          }
         }
       }
     }
@@ -345,16 +362,16 @@ export const PRODUCTION_DISABLED_CONFIG_EXAMPLE = {
 export function buildConfigFromEnv(env = process.env) {
   return {
     schema: DEPLOYMENT_CONFIG_SCHEMA,
-    environment: env.DEPLOYMENT_ENV || 'LOCAL_TEST',
+    environment: env.PAYMENT_RUNTIME_ENV || env.DEPLOYMENT_ENV || 'LOCAL_TEST',
     deployment_id: env.DEPLOYMENT_ID || `deploy-${Date.now()}`,
     release_sha: env.RELEASE_SHA || 'unknown',
     payments_enabled: env.PAYMENTS_ENABLED === 'true',
     staging_payment_enabled: env.STAGING_PAYMENT_ENABLED === 'true',
     production_payment_enabled: env.PRODUCTION_PAYMENT_ENABLED === 'true',
     stripe_mode: env.STRIPE_MODE || 'TEST',
-    stripe_secret_key: env.STRIPE_SECRET_KEY_REF || DEPLOYMENT_PLACEHOLDERS.stripe_secret_key,
-    stripe_webhook_secret: env.STRIPE_WEBHOOK_SECRET_REF || DEPLOYMENT_PLACEHOLDERS.stripe_webhook_secret,
-    stripe_publishable_key: env.STRIPE_PUBLISHABLE_KEY_REF || DEPLOYMENT_PLACEHOLDERS.stripe_publishable_key,
+    stripe_secret_key: env.STRIPE_SECRET_KEY || env.STRIPE_SECRET_KEY_REF || DEPLOYMENT_PLACEHOLDERS.stripe_secret_key,
+    stripe_webhook_secret: env.STRIPE_WEBHOOK_SECRET || env.STRIPE_WEBHOOK_SECRET_REF || DEPLOYMENT_PLACEHOLDERS.stripe_webhook_secret,
+    stripe_publishable_key: env.STRIPE_PUBLISHABLE_KEY || env.STRIPE_PUBLISHABLE_KEY_REF || DEPLOYMENT_PLACEHOLDERS.stripe_publishable_key,
     public_base_url: env.PUBLIC_BASE_URL || 'https://localhost:3000',
     payment_api_base_url: env.PAYMENT_API_BASE_URL || 'https://localhost:3000',
     stripe_success_url: env.STRIPE_SUCCESS_URL || 'https://localhost:3000/payment/success?session_id={CHECKOUT_SESSION_ID}',
@@ -433,20 +450,46 @@ export function validateConfigSecurity(config) {
   const reasons = [];
   const safeConfig = safeConfigForLogging(config);
 
-  // Check for secrets in config values
-  const configString = JSON.stringify(safeConfig);
-  const secretFindings = scanForSecrets(configString, 'config');
-  if (secretFindings.length > 0) {
-    reasons.push(`Config contains apparent secrets: ${secretFindings.map(f => f.match).join(', ')}`);
+  // Check for secrets in config values — only check known secret fields, not everything
+  // Exclude fields that are known to contain non-secret long strings
+  const nonSecretFields = ['release_sha', 'deployment_id', 'deployment_env', 'release_sha_ref'];
+  const secretKeys = [
+    'stripe_secret_key', 'stripe_webhook_secret', 'stripe_publishable_key',
+    'shared_storage_url', 'shared_storage_token'
+  ];
+
+  for (const key of secretKeys) {
+    if (safeConfig[key] && safeConfig[key] !== '[REDACTED]') {
+      // Use specific secret patterns only (not generic ones)
+      const specificPatterns = [
+        /sk_live_[a-zA-Z0-9]{24,}/,
+        /rk_live_[a-zA-Z0-9]{24,}/,
+        /whsec_[a-zA-Z0-9]{32,}/,
+        /acct_[a-zA-Z0-9]{16,}/,
+        /sk_test_[a-zA-Z0-9]{24,}/,
+        /pk_live_[a-zA-Z0-9]{24,}/,
+        /pk_test_[a-zA-Z0-9]{24,}/,
+        /redis:\/\/[^:]+:[^@]+@/,
+        /postgresql:\/\/[^:]+:[^@]+@/,
+        /mongodb:\/\/[^:]+:[^@]+@/,
+      ];
+      for (const pattern of specificPatterns) {
+        if (pattern.test(safeConfig[key])) {
+          reasons.push(`${key} contains apparent secret`);
+          break;
+        }
+      }
+    }
   }
 
   // Check for placeholders in non-LOCAL_TEST environments
   if (config.environment !== DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
+    const configString = JSON.stringify(safeConfig);
     const placeholderFindings = detectPlaceholders(configString, 'config');
     if (placeholderFindings.length > 0) {
       reasons.push(`Config contains unresolved placeholders in ${config.environment}: ${placeholderFindings.map(f => f.match).join(', ')}`);
     }
   }
 
-  return { ok: reasons.length === 0, reasons, secretFindings: scanForSecrets(configString), placeholderFindings: detectPlaceholders(configString) };
+  return { ok: reasons.length === 0, reasons };
 }

@@ -1,0 +1,28 @@
+{
+  "name": "nexora-payment-staging",
+  "version": "0.1.0",
+  "description": "Nexora Payment Staging - Cloudflare Workers deployment configuration (PROP.17)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "worker:dev": "wrangler dev",
+    "worker:deploy": "wrangler deploy",
+    "worker:validate": "node ops/payment/validate-cloudflare-deployment-config.mjs",
+    "worker:test:router": "node ops/payment/test-router.mjs",
+    "worker:test:webhook": "node ops/payment/test-webhook-worker.mjs",
+    "worker:test:neon": "node ops/payment/test-neon-binding.mjs",
+    "build": "node build.cjs",
+    "verify": "node verify.cjs",
+    "validate:ops": "node ops/validate-ops.mjs",
+    "validate:website": "node ops/validate-website.mjs"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.60.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
