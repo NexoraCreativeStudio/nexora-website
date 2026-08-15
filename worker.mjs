@@ -1,7 +1,8 @@
-/* Nexora — Cloudflare Workers Entry Point (PROP.17 HOTFIX 6)
+/* Nexora — Cloudflare Workers Entry Point (PROP.17 HOTFIX 7)
    Route-before-config: URL → route → lightweight config → 404/405 → full config → handler.
    Unknown routes return 404 WITHOUT validating payment/storage/Stripe secrets.
-   Logger initialized from Cloudflare env bindings. */
+   Logger initialized from Cloudflare env bindings.
+   Statically analyzable lazy handler imports — no dynamic import(pathVariable). */
 
 import { buildConfigFromEnv, DEPLOYMENT_ENVIRONMENTS } from './ops/payment/deployment-config.mjs';
 import { createWebhookVerifier } from './ops/payment/webhook-verifier.mjs';
@@ -129,23 +130,25 @@ function handlePreflightCf(request, config) {
   return new Response(null, { status: 200, headers });
 }
 
-/* Lazy load single handler by name */
+/* Statically analyzable handler loaders — literal import() call sites for Wrangler/esbuild */
+const HANDLER_LOADERS = {
+  health: () => import('./api/payment/health.mjs'),
+  readiness: () => import('./api/payment/readiness.mjs'),
+  'checkout-create': () => import('./api/payment/checkout-create.mjs'),
+  status: () => import('./api/payment/status.mjs'),
+  webhook: () => import('./api/payment/webhook.mjs'),
+};
+
+/* Lazy load single handler by name — validates handlerName, preserves cache, invokes loader */
 async function loadHandler(handlerName) {
   if (handlerCache.has(handlerName)) return handlerCache.get(handlerName);
 
-  const paths = {
-    'health': './api/payment/health.mjs',
-    'readiness': './api/payment/readiness.mjs',
-    'checkout-create': './api/payment/checkout-create.mjs',
-    'status': './api/payment/status.mjs',
-    'webhook': './api/payment/webhook.mjs',
-  };
+  const loader = HANDLER_LOADERS[handlerName];
+  if (!loader) throw new Error(`Unknown handler: ${handlerName}`);
 
-  const path = paths[handlerName];
-  if (!path) throw new Error(`Unknown handler: ${handlerName}`);
-
-  const mod = await import(path);
+  const mod = await loader();
   const handler = mod.default;
+  if (typeof handler !== 'function') throw new Error(`Handler ${handlerName} does not export default function`);
   handlerCache.set(handlerName, handler);
   return handler;
 }
