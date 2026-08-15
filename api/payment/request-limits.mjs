@@ -4,6 +4,9 @@
 
 import { ERROR_CODES, sendErrorResponse } from './error-contract.mjs';
 
+/* Re-export for consumers */
+export { ERROR_CODES, sendErrorResponse };
+
 /* Default limits */
 export const DEFAULT_LIMITS = {
   maxJsonBodySize: 1048576,        // 1 MB
@@ -214,7 +217,7 @@ export function validateCorrelationId(correlationId, maxLength = DEFAULT_LIMITS.
 /* Create safe response headers */
 export function setSafeResponseHeaders(res, correlationId) {
   // Handle both Node.js and Cloudflare Workers response objects
-  const setHeader = res.setHeader || res.headers?.set?.bind(res.headers);
+  const setHeader = res.setHeader?.bind(res) || res.headers?.set?.bind(res.headers);
   const status = res.status || res.statusCode;
 
   if (setHeader) {

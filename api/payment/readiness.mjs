@@ -14,7 +14,8 @@
 
    Returns: READY/NOT_READY with detailed checks + COLLECTION_ENABLED/COLLECTION_DISABLED state */
 
-import { buildConfigFromEnv, validateDeploymentConfig, DEPLOYMENT_ENVIRONMENTS, validateStripeConfig } from '../../ops/payment/deployment-config.mjs';
+import { buildConfigFromEnv, validateDeploymentConfig, DEPLOYMENT_ENVIRONMENTS } from '../../ops/payment/deployment-config.mjs';
+import { validateStripeConfig } from '../../ops/payment/stripe-test-boundaries.mjs';
 import { createSharedStorageClient } from '../../ops/payment/shared-storage-binding.mjs';
 import { getDefaultLogger } from '../../ops/payment/structured-logging.mjs';
 
@@ -44,8 +45,10 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Content-Type-Options', 'nosniff');
 
+  // Use config from request adapter (injected by worker)
+  const config = req.config || buildConfigFromEnv();
+
   // CORS
-  const config = buildConfigFromEnv();
   if (config.allowed_origins) {
     const origins = config.allowed_origins.split(',').map(o => o.trim());
     const requestOrigin = req.headers.origin;
@@ -67,7 +70,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    const config = buildConfigFromEnv();
 
     // Validate config
     const configValidation = validateDeploymentConfig(config);

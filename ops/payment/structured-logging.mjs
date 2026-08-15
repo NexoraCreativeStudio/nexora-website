@@ -158,6 +158,13 @@ export class SafeLogger {
     });
   }
 
+  logWebhookNormalizationFailed(data) {
+    this.warn('webhook_normalization_failed', {
+      correlation_id: data.correlationId,
+      reasons: data.reasons,
+    });
+  }
+
   logReconciliation(data) {
     this.info('reconciliation', {
       correlation_id: data.correlationId,
@@ -217,6 +224,23 @@ export class SafeLogger {
       gate: data.gate,
       enabled: data.enabled,
       action: data.action,
+    });
+  }
+
+  logRequestComplete(data) {
+    this.info('request_complete', {
+      correlation_id: data.correlationId,
+      method: data.method,
+      path: data.path,
+      status: data.status,
+      duration_ms: data.duration_ms,
+    });
+  }
+
+  logSessionNotFound(data) {
+    this.info('session_not_found', {
+      correlation_id: data.correlationId,
+      session_id: data.sessionId,
     });
   }
 }

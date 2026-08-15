@@ -32,8 +32,10 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Content-Type-Options', 'nosniff');
 
+  // Use config from request adapter (injected by worker)
+  const config = req.config || buildConfigFromEnv();
+
   // CORS
-  const config = buildConfigFromEnv();
   if (config.allowed_origins) {
     const origins = config.allowed_origins.split(',').map(o => o.trim());
     const requestOrigin = req.headers.origin;
@@ -55,7 +57,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    const config = buildConfigFromEnv();
 
     const checks = {
       runtime: 'alive',
