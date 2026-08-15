@@ -251,7 +251,7 @@ async function run() {
       STRIPE_SECRET_KEY: 'sk_test_PLACEHOLDER_REPLACE_WITH_REAL_TEST_KEY',
       STRIPE_WEBHOOK_SECRET: 'whsec_PLACEHOLDER_REPLACE_WITH_REAL_TEST_KEY',
       STRIPE_PUBLISHABLE_KEY: 'pk_test_PLACEHOLDER_REPLACE_WITH_REAL_TEST_KEY',
-      NEON_DATABASE_URL: '',
+      NEON_DATABASE_URL: 'postgresql://test:test@localhost/test',
     });
     // Webhook with no real Neon will fail closed on storage but should still return safe error
     check('Worker webhook route responds', res.status >= 400 && res.status <= 500, `Got ${res.status}`);
