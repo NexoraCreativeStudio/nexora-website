@@ -317,15 +317,27 @@ export function createBoundProductionStorageAdapter(config) {
   return adapter;
 }
 
-/* Convenience: create client directly from environment (for endpoint handlers) */
-export async function createSharedStorageClientFromEnv(env = process.env) {
+/* Convenience: create client directly from environment (for endpoint handlers)
+   REQUIRES env parameter — fails closed if not provided.
+   In Workers: pass the Cloudflare env bindings object.
+   In local tests: pass process.env explicitly. */
+export async function createSharedStorageClientFromEnv(env) {
+  if (!env) {
+    throw new Error('createSharedStorageClientFromEnv requires env parameter — cannot default to process.env in Workers runtime');
+  }
   const { buildConfigFromEnv } = await import('./deployment-config.mjs');
   const config = buildConfigFromEnv(env);
   return createSharedStorageClient(config);
 }
 
-/* Convenience: create adapter directly from environment (for endpoint handlers) */
-export async function createBoundProductionStorageAdapterFromEnv(env = process.env) {
+/* Convenience: create adapter directly from environment (for endpoint handlers)
+   REQUIRES env parameter — fails closed if not provided.
+   In Workers: pass the Cloudflare env bindings object.
+   In local tests: pass process.env explicitly. */
+export async function createBoundProductionStorageAdapterFromEnv(env) {
+  if (!env) {
+    throw new Error('createBoundProductionStorageAdapterFromEnv requires env parameter — cannot default to process.env in Workers runtime');
+  }
   const { buildConfigFromEnv } = await import('./deployment-config.mjs');
   const config = buildConfigFromEnv(env);
   return createBoundProductionStorageAdapter(config);

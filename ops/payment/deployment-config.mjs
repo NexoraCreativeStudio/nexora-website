@@ -360,9 +360,49 @@ export const PRODUCTION_DISABLED_CONFIG_EXAMPLE = {
 
 /* Build configuration from environment variables (deployment-time) */
 export function buildConfigFromEnv(env = process.env) {
+  // Fail closed: in Workers runtime, process.env is not available.
+  // Require explicit env parameter to distinguish between:
+  // - LOCAL_TEST: defaults allowed (process.env available in Node)
+  // - STAGING_TEST/PRODUCTION_DISABLED: MUST have explicit env bindings
+  const environment = env.PAYMENT_RUNTIME_ENV || env.DEPLOYMENT_ENV || 'LOCAL_TEST';
+
+  // For STAGING_TEST and PRODUCTION_DISABLED, fail closed if env is not provided
+  // (i.e., if we're defaulting to process.env which is undefined in Workers)
+  const isWorkersRuntime = typeof process === 'undefined' || !process.env;
+  const isNonLocalEnvironment = environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST || environment === DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED;
+
+  if (isWorkersRuntime && isNonLocalEnvironment && (!env || env === process.env)) {
+    throw new Error(
+      `buildConfigFromEnv: ${environment} environment requires explicit env parameter (Cloudflare Workers bindings). ` +
+      `Cannot default to process.env which is unavailable in Workers runtime.`
+    );
+  }
+
+  // Also fail closed if STAGING_TEST is set but required bindings are missing
+  if (environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST) {
+    const requiredBindings = [
+      'SHARED_STORAGE_PROVIDER',
+      'SHARED_STORAGE_NAMESPACE',
+      'NEON_DATABASE_URL',
+      'STRIPE_SECRET_KEY',
+      'STRIPE_WEBHOOK_SECRET',
+    ];
+    const missing = requiredBindings.filter(key => !env[key] && !env[`${key}_REF`]);
+    if (missing.length > 0) {
+      throw new Error(
+        `STAGING_TEST environment requires bindings: ${missing.join(', ')}. ` +
+        `Configure these in wrangler.toml [vars] or as secrets.`
+      );
+    }
+    // Ensure SHARED_STORAGE_PROVIDER is not 'memory' for STAGING_TEST
+    if (env.SHARED_STORAGE_PROVIDER === 'memory' || env.SHARED_STORAGE_PROVIDER === 'memory-test') {
+      throw new Error('STAGING_TEST environment requires explicit SHARED_STORAGE_PROVIDER (e.g., "postgresql-workers", "neon-workers"). Memory adapter is only valid for LOCAL_TEST.');
+    }
+  }
+
   return {
     schema: DEPLOYMENT_CONFIG_SCHEMA,
-    environment: env.PAYMENT_RUNTIME_ENV || env.DEPLOYMENT_ENV || 'LOCAL_TEST',
+    environment,
     deployment_id: env.DEPLOYMENT_ID || `deploy-${Date.now()}`,
     release_sha: env.RELEASE_SHA || 'unknown',
     payments_enabled: env.PAYMENTS_ENABLED === 'true',

@@ -46,6 +46,8 @@ export default async function handler(req, res) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
 
   // Use config from request adapter (injected by worker)
+  // In Workers: worker.mjs injects config via req.config
+  // In local tests: handler is called directly without worker, so fall back to buildConfigFromEnv()
   const config = req.config || buildConfigFromEnv();
 
   // CORS
