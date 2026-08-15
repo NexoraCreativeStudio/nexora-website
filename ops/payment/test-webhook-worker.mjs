@@ -34,7 +34,7 @@ function buildWebhookRequest(rawPayload, signatureHeader) {
 
   return {
     method: 'POST',
-    url: 'https://nexora-payment-staging.nexora-staging.workers.dev/api/payment/webhook',
+    url: 'https://nexora-payment-staging.nexorastudio-uk.workers.dev/api/payment/webhook',
     headers,
     _rawBody: bytes,
     cf: {},

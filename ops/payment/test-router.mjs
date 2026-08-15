@@ -36,8 +36,8 @@ function mockWorkerEnv(overrides = {}) {
     IDEMPOTENCY_TTL_SECONDS: '86400',
     RECONCILIATION_TOLERANCE_PENCE: '0',
     LOG_LEVEL: 'info',
-    PUBLIC_BASE_URL: 'https://nexora-payment-staging.nexora-staging.workers.dev',
-    PAYMENT_API_BASE_URL: 'https://nexora-payment-staging.nexora-staging.workers.dev',
+    PUBLIC_BASE_URL: 'https://nexora-payment-staging.nexorastudio-uk.workers.dev',
+    PAYMENT_API_BASE_URL: 'https://nexora-payment-staging.nexorastudio-uk.workers.dev',
     ALLOWED_ORIGINS: 'https://staging.nexora.studio',
     DEPLOYMENT_ID: 'router-test',
     RELEASE_SHA: 'abcdef1234567890abcdef1234567890abcdef12',
@@ -52,7 +52,7 @@ function mockWorkerEnv(overrides = {}) {
 
 /* Mock Cloudflare Worker Request */
 function mockWorkerRequest(method, path, options = {}) {
-  const url = `https://nexora-payment-staging.nexora-staging.workers.dev${path}`;
+  const url = `https://nexora-payment-staging.nexorastudio-uk.workers.dev${path}`;
   const headers = new Headers(options.headers || {});
   headers.set('x-correlation-id', 'req-test-correlation-123456');
 
