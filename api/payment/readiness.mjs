@@ -19,8 +19,6 @@ import { validateStripeConfig } from '../../ops/payment/stripe-test-boundaries.m
 import { createSharedStorageClient } from '../../ops/payment/shared-storage-binding.mjs';
 import { getDefaultLogger } from '../../ops/payment/structured-logging.mjs';
 
-const logger = getDefaultLogger();
-
 /* Deployment state model (PROP.15 §18-20) */
 export const DEPLOYMENT_STATE = {
   /* Health: runtime is alive and config is parseable */
@@ -49,6 +47,9 @@ export default async function handler(req, res) {
   // In Workers: worker.mjs injects config via req.config
   // In local tests: handler is called directly without worker
   const config = req.config;
+
+  // Request-scoped logger (injected by worker) with local test fallback
+  const logger = req.logger || getDefaultLogger();
 
   // CORS
   if (config.allowed_origins) {
@@ -158,6 +159,13 @@ export default async function handler(req, res) {
       if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST) {
         if (!config.staging_payment_enabled) {
           reasons.push('STAGING_PAYMENT_ENABLED=false — staging payments disabled');
+        }
+      }
+
+      // Check NEON_DATABASE_URL presence (observational only)
+      if (config.environment !== DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
+        if (missing.neon_database_url) {
+          reasons.push('NEON_DATABASE_URL not configured');
         }
       }
 
@@ -351,7 +359,31 @@ function generateCorrelationId() {
 
 /* For local testing */
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const testReq = { method: 'GET', headers: {} };
+  const testReq = {
+    method: 'GET',
+    headers: {},
+    config: {
+      environment: 'LOCAL_TEST',
+      deployment_id: 'local-test',
+      release_sha: 'local',
+      payments_enabled: false,
+      staging_payment_enabled: false,
+      production_payment_enabled: false,
+      stripe_mode: 'TEST',
+      stripe_secret_key: 'sk_test_PLACEHOLDER_REPLACE_WITH_REAL_TEST_KEY',
+      stripe_webhook_secret: 'whsec_PLACEHOLDER_REPLACE_WITH_REAL_TEST_SECRET',
+      stripe_publishable_key: 'pk_test_PLACEHOLDER_REPLACE_WITH_REAL_TEST_KEY',
+      stripe_api_version: '2024-06-20',
+      webhook_tolerance_seconds: 300,
+      idempotency_ttl_seconds: 86400,
+      reconciliation_tolerance_pence: 0,
+      shared_storage_provider: 'memory',
+      shared_storage_namespace: 'nexora/payment/LOCAL_TEST',
+      public_base_url: 'https://localhost:3000',
+      payment_api_base_url: 'https://localhost:3000',
+      allowed_origins: 'https://localhost:3000',
+    }
+  };
   const testRes = {
     statusCode: 200,
     headers: {},
