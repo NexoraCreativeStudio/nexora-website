@@ -5,7 +5,7 @@
    Statically analyzable lazy handler imports — no dynamic import(pathVariable).
    Request-scoped logger injected into handlers for correct environment telemetry. */
 
-import { buildConfigFromEnv, DEPLOYMENT_ENVIRONMENTS } from './ops/payment/deployment-config.mjs';
+import { buildConfigFromEnv, buildReadinessConfigFromEnv, DEPLOYMENT_ENVIRONMENTS } from './ops/payment/deployment-config.mjs';
 import { createWebhookVerifier } from './ops/payment/webhook-verifier.mjs';
 import { parseRawBody, rawBodyToString, handlePreflight, ERROR_CODES } from './api/payment/request-limits.mjs';
 import { sendErrorResponse } from './api/payment/error-contract.mjs';
@@ -14,8 +14,8 @@ import { SafeLogger } from './ops/payment/structured-logging.mjs';
 
 /* Route map - exact path matching only */
 const ROUTES = [
-  { path: '/api/payment/health', handler: 'health', allowedMethods: ['GET', 'OPTIONS'], requiresFullConfig: false },
-  { path: '/api/payment/readiness', handler: 'readiness', allowedMethods: ['GET', 'OPTIONS'], requiresFullConfig: true },
+  { path: '/api/payment/health', handler: 'health', allowedMethods: ['GET', 'OPTIONS'], requiresFullConfig: false, requiresObservationalConfig: false },
+  { path: '/api/payment/readiness', handler: 'readiness', allowedMethods: ['GET', 'OPTIONS'], requiresFullConfig: false, requiresObservationalConfig: true },
   { path: '/api/payment/checkout-create', handler: 'checkout-create', allowedMethods: ['POST', 'OPTIONS'], requiresFullConfig: true },
   { path: '/api/payment/status', handler: 'status', allowedMethods: ['GET', 'OPTIONS'], requiresFullConfig: true },
   { path: '/api/payment/webhook', handler: 'webhook', allowedMethods: ['POST', 'OPTIONS'], requiresFullConfig: true },
@@ -264,10 +264,14 @@ export default {
     const corsResponse = handlePreflightCf(request, lightConfig);
     if (corsResponse) return corsResponse;
 
-    // 8. Only NOW build full config for routes that require it
+    // 8. Only NOW build config for routes that require it
     let config;
     if (route.requiresFullConfig) {
+      // Full strict config for routes that need secrets/validation
       config = buildConfigFromEnv(env);
+    } else if (route.requiresObservationalConfig) {
+      // Observational config for readiness - never throws, reports missing bindings
+      config = buildReadinessConfigFromEnv(env);
     } else {
       // For routes like /health that don't need full config, merge lightweight with minimal defaults
       config = {

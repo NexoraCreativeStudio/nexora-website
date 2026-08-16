@@ -485,6 +485,59 @@ export function detectPlaceholders(content, context = 'unknown') {
   return findings;
 }
 
+/* Observational config for readiness endpoint — reads env bindings without throwing on missing values.
+   Returns config object with all available values, marking missing ones. Never throws.
+   Used by readiness endpoint to report NOT_READY with safe reasons instead of 500. */
+export function buildReadinessConfigFromEnv(env = process.env) {
+  // Always try to read env, never throw if bindings missing
+  const environment = env?.PAYMENT_RUNTIME_ENV || env?.DEPLOYMENT_ENV || 'LOCAL_TEST';
+
+  return {
+    schema: DEPLOYMENT_CONFIG_SCHEMA,
+    environment,
+    deployment_id: env?.DEPLOYMENT_ID || `deploy-${Date.now()}`,
+    release_sha: env?.RELEASE_SHA || 'unknown',
+    payments_enabled: env?.PAYMENTS_ENABLED === 'true',
+    staging_payment_enabled: env?.STAGING_PAYMENT_ENABLED === 'true',
+    production_payment_enabled: env?.PRODUCTION_PAYMENT_ENABLED === 'true',
+    stripe_mode: env?.STRIPE_MODE || 'TEST',
+    stripe_secret_key: env?.STRIPE_SECRET_KEY || env?.STRIPE_SECRET_KEY_REF || DEPLOYMENT_PLACEHOLDERS.stripe_secret_key,
+    stripe_webhook_secret: env?.STRIPE_WEBHOOK_SECRET || env?.STRIPE_WEBHOOK_SECRET_REF || DEPLOYMENT_PLACEHOLDERS.stripe_webhook_secret,
+    stripe_publishable_key: env?.STRIPE_PUBLISHABLE_KEY || env?.STRIPE_PUBLISHABLE_KEY_REF || DEPLOYMENT_PLACEHOLDERS.stripe_publishable_key,
+    public_base_url: env?.PUBLIC_BASE_URL || 'https://localhost:3000',
+    payment_api_base_url: env?.PAYMENT_API_BASE_URL || 'https://localhost:3000',
+    stripe_success_url: env?.STRIPE_SUCCESS_URL || 'https://localhost:3000/payment/success?session_id={CHECKOUT_SESSION_ID}',
+    stripe_cancel_url: env?.STRIPE_CANCEL_URL || 'https://localhost:3000/payment/cancel',
+    shared_storage_provider: env?.SHARED_STORAGE_PROVIDER || 'memory',
+    shared_storage_namespace: env?.SHARED_STORAGE_NAMESPACE || 'nexora/payment/LOCAL_TEST',
+    shared_storage_url: env?.SHARED_STORAGE_URL_REF || DEPLOYMENT_PLACEHOLDERS.shared_storage_url,
+    shared_storage_token: env?.SHARED_STORAGE_TOKEN_REF || DEPLOYMENT_PLACEHOLDERS.shared_storage_token,
+    allowed_origins: env?.ALLOWED_ORIGINS || 'https://localhost:3000',
+    log_level: env?.LOG_LEVEL || 'info',
+    max_json_body_size: parseInt(env?.MAX_JSON_BODY_SIZE, 10) || 1048576,
+    max_raw_webhook_size: parseInt(env?.MAX_RAW_WEBHOOK_SIZE, 10) || 1048576,
+
+    // PROP.15 additions
+    stripe_api_version: env?.STRIPE_API_VERSION || '2024-06-20',
+    webhook_tolerance_seconds: parseInt(env?.WEBHOOK_TOLERANCE_SECONDS, 10) || 300,
+    idempotency_ttl_seconds: parseInt(env?.IDEMPOTENCY_TTL_SECONDS, 10) || 86400,
+    reconciliation_tolerance_pence: parseInt(env?.RECONCILIATION_TOLERANCE_PENCE, 10) || 0,
+
+    // Observational metadata - helps readiness endpoint identify missing bindings
+    _observational: true,
+    _missing_bindings: {
+      stripe_secret_key: !env?.STRIPE_SECRET_KEY && !env?.STRIPE_SECRET_KEY_REF,
+      stripe_webhook_secret: !env?.STRIPE_WEBHOOK_SECRET && !env?.STRIPE_WEBHOOK_SECRET_REF,
+      stripe_publishable_key: !env?.STRIPE_PUBLISHABLE_KEY && !env?.STRIPE_PUBLISHABLE_KEY_REF,
+      shared_storage_provider: !env?.SHARED_STORAGE_PROVIDER,
+      shared_storage_namespace: !env?.SHARED_STORAGE_NAMESPACE,
+      neon_database_url: !env?.NEON_DATABASE_URL,
+      public_base_url: !env?.PUBLIC_BASE_URL,
+      payment_api_base_url: !env?.PAYMENT_API_BASE_URL,
+    },
+  };
+}
+
 /* Validate config has no secrets and no unresolved placeholders for non-LOCAL_TEST */
 export function validateConfigSecurity(config) {
   const reasons = [];

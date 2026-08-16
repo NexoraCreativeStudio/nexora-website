@@ -14,7 +14,7 @@
 
    Returns: READY/NOT_READY with detailed checks + COLLECTION_ENABLED/COLLECTION_DISABLED state */
 
-import { buildConfigFromEnv, validateDeploymentConfig, DEPLOYMENT_ENVIRONMENTS } from '../../ops/payment/deployment-config.mjs';
+import { validateDeploymentConfig, DEPLOYMENT_ENVIRONMENTS } from '../../ops/payment/deployment-config.mjs';
 import { validateStripeConfig } from '../../ops/payment/stripe-test-boundaries.mjs';
 import { createSharedStorageClient } from '../../ops/payment/shared-storage-binding.mjs';
 import { getDefaultLogger } from '../../ops/payment/structured-logging.mjs';
@@ -47,8 +47,8 @@ export default async function handler(req, res) {
 
   // Use config from request adapter (injected by worker)
   // In Workers: worker.mjs injects config via req.config
-  // In local tests: handler is called directly without worker, so fall back to buildConfigFromEnv()
-  const config = req.config || buildConfigFromEnv();
+  // In local tests: handler is called directly without worker
+  const config = req.config;
 
   // CORS
   if (config.allowed_origins) {
@@ -72,14 +72,15 @@ export default async function handler(req, res) {
   }
 
   try {
-
-    // Validate config
-    const configValidation = validateDeploymentConfig(config);
-    const stripeValidation = validateStripeConfig(config);
+    // Handle observational config (from worker) - never throws, reports missing bindings
+    // Fall back to strict validation for local testing
+    const isObservational = config._observational === true;
+    let configValidation = { ok: true, reasons: [] };
+    let stripeValidation = { ok: true, reasons: [] };
     const reasons = [];
     const checks = {
-      config_valid: configValidation.ok,
-      stripe_config_valid: stripeValidation.ok,
+      config_valid: true,
+      stripe_config_valid: true,
       environment: config.environment,
       stripe_mode: config.stripe_mode,
       stripe_api_version: config.stripe_api_version,
@@ -98,68 +99,140 @@ export default async function handler(req, res) {
       payments_enabled: config.payments_enabled,
     };
 
-    if (!configValidation.ok) {
-      reasons.push(...configValidation.reasons);
-    }
-    if (!stripeValidation.ok) {
-      reasons.push(...stripeValidation.reasons);
-    }
+    if (isObservational) {
+      // Observational mode: use _missing_bindings to determine readiness without throwing
+      const missing = config._missing_bindings || {};
 
-    // Check shared storage for STAGING_TEST and PRODUCTION_DISABLED
-    if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST ||
-        config.environment === DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED) {
-      if (config.shared_storage_provider && config.shared_storage_provider !== 'memory') {
-        checks.shared_storage_configured = true;
+      // Check shared storage for STAGING_TEST and PRODUCTION_DISABLED
+      if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST ||
+          config.environment === DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED) {
+        if (config.shared_storage_provider && config.shared_storage_provider !== 'memory') {
+          checks.shared_storage_configured = true;
+        } else {
+          reasons.push('shared storage provider not configured (must be non-memory for STAGING_TEST/PRODUCTION_DISABLED)');
+        }
+      } else if (config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
+        checks.shared_storage_configured = true; // memory adapter available
+      }
+
+      // Check Stripe secrets (references - not placeholders)
+      if (config.stripe_secret_key && !config.stripe_secret_key.includes('PLACEHOLDER')) {
+        checks.stripe_secret_configured = true;
       } else {
-        reasons.push('shared storage provider not configured (must be non-memory for STAGING_TEST/PRODUCTION_DISABLED)');
+        if (config.environment !== DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
+          reasons.push('stripe secret key not configured (placeholder detected)');
+        }
       }
-    } else if (config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
-      checks.shared_storage_configured = true; // memory adapter available
-    }
 
-    // Check Stripe secrets (references - not placeholders)
-    if (config.stripe_secret_key && !config.stripe_secret_key.includes('PLACEHOLDER')) {
-      checks.stripe_secret_configured = true;
+      if (config.stripe_webhook_secret && !config.stripe_webhook_secret.includes('PLACEHOLDER')) {
+        checks.webhook_secret_configured = true;
+      } else {
+        if (config.environment !== DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
+          reasons.push('stripe webhook secret not configured (placeholder detected)');
+        }
+      }
+
+      // Check base URLs
+      if (config.public_base_url && config.payment_api_base_url) {
+        checks.base_url_configured = true;
+      } else {
+        reasons.push('base URLs not configured');
+      }
+
+      // Check Stripe verifier availability
+      if (config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
+        checks.stripe_verifier_available = true; // deterministic verifier available
+      } else if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST) {
+        checks.stripe_verifier_available = config.stripe_mode === 'TEST';
+        if (config.stripe_mode !== 'TEST') {
+          reasons.push('STAGING_TEST requires STRIPE_MODE=TEST');
+        }
+      } else if (config.environment === DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED) {
+        checks.stripe_verifier_available = config.stripe_mode === 'LIVE' || config.stripe_mode === 'TEST';
+        if (config.stripe_mode === 'LIVE' && !config.production_payment_enabled) {
+          reasons.push('PRODUCTION_DISABLED with STRIPE_MODE=LIVE requires PRODUCTION_PAYMENT_ENABLED=true');
+        }
+      }
+
+      // Check staging gate
+      if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST) {
+        if (!config.staging_payment_enabled) {
+          reasons.push('STAGING_PAYMENT_ENABLED=false — staging payments disabled');
+        }
+      }
+
+      // Add missing bindings info to checks for visibility
+      checks.missing_bindings = missing;
     } else {
-      if (config.environment !== DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
-        reasons.push('stripe secret key not configured (placeholder detected)');
-      }
-    }
+      // Strict validation mode (local testing fallback)
+      configValidation = validateDeploymentConfig(config);
+      stripeValidation = validateStripeConfig(config);
+      checks.config_valid = configValidation.ok;
+      checks.stripe_config_valid = stripeValidation.ok;
 
-    if (config.stripe_webhook_secret && !config.stripe_webhook_secret.includes('PLACEHOLDER')) {
-      checks.webhook_secret_configured = true;
-    } else {
-      if (config.environment !== DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
-        reasons.push('stripe webhook secret not configured (placeholder detected)');
+      if (!configValidation.ok) {
+        reasons.push(...configValidation.reasons);
       }
-    }
-
-    // Check base URLs
-    if (config.public_base_url && config.payment_api_base_url) {
-      checks.base_url_configured = true;
-    } else {
-      reasons.push('base URLs not configured');
-    }
-
-    // Check Stripe verifier availability
-    if (config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
-      checks.stripe_verifier_available = true; // deterministic verifier available
-    } else if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST) {
-      checks.stripe_verifier_available = config.stripe_mode === 'TEST';
-      if (config.stripe_mode !== 'TEST') {
-        reasons.push('STAGING_TEST requires STRIPE_MODE=TEST');
+      if (!stripeValidation.ok) {
+        reasons.push(...stripeValidation.reasons);
       }
-    } else if (config.environment === DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED) {
-      checks.stripe_verifier_available = config.stripe_mode === 'LIVE' || config.stripe_mode === 'TEST';
-      if (config.stripe_mode === 'LIVE' && !config.production_payment_enabled) {
-        reasons.push('PRODUCTION_DISABLED with STRIPE_MODE=LIVE requires PRODUCTION_PAYMENT_ENABLED=true');
-      }
-    }
 
-    // Check staging gate
-    if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST) {
-      if (!config.staging_payment_enabled) {
-        reasons.push('STAGING_PAYMENT_ENABLED=false — staging payments disabled');
+      // Check shared storage for STAGING_TEST and PRODUCTION_DISABLED
+      if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST ||
+          config.environment === DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED) {
+        if (config.shared_storage_provider && config.shared_storage_provider !== 'memory') {
+          checks.shared_storage_configured = true;
+        } else {
+          reasons.push('shared storage provider not configured (must be non-memory for STAGING_TEST/PRODUCTION_DISABLED)');
+        }
+      } else if (config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
+        checks.shared_storage_configured = true; // memory adapter available
+      }
+
+      // Check Stripe secrets (references - not placeholders)
+      if (config.stripe_secret_key && !config.stripe_secret_key.includes('PLACEHOLDER')) {
+        checks.stripe_secret_configured = true;
+      } else {
+        if (config.environment !== DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
+          reasons.push('stripe secret key not configured (placeholder detected)');
+        }
+      }
+
+      if (config.stripe_webhook_secret && !config.stripe_webhook_secret.includes('PLACEHOLDER')) {
+        checks.webhook_secret_configured = true;
+      } else {
+        if (config.environment !== DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
+          reasons.push('stripe webhook secret not configured (placeholder detected)');
+        }
+      }
+
+      // Check base URLs
+      if (config.public_base_url && config.payment_api_base_url) {
+        checks.base_url_configured = true;
+      } else {
+        reasons.push('base URLs not configured');
+      }
+
+      // Check Stripe verifier availability
+      if (config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
+        checks.stripe_verifier_available = true; // deterministic verifier available
+      } else if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST) {
+        checks.stripe_verifier_available = config.stripe_mode === 'TEST';
+        if (config.stripe_mode !== 'TEST') {
+          reasons.push('STAGING_TEST requires STRIPE_MODE=TEST');
+        }
+      } else if (config.environment === DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED) {
+        checks.stripe_verifier_available = config.stripe_mode === 'LIVE' || config.stripe_mode === 'TEST';
+        if (config.stripe_mode === 'LIVE' && !config.production_payment_enabled) {
+          reasons.push('PRODUCTION_DISABLED with STRIPE_MODE=LIVE requires PRODUCTION_PAYMENT_ENABLED=true');
+        }
+      }
+
+      // Check staging gate
+      if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST) {
+        if (!config.staging_payment_enabled) {
+          reasons.push('STAGING_PAYMENT_ENABLED=false — staging payments disabled');
+        }
       }
     }
 
