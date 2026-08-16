@@ -5,7 +5,6 @@
    shared storage, structured logging, governed reconciliation,
    idempotency, environment gates. */
 
-import { join } from 'path';
 import { buildConfigFromEnv, validateDeploymentConfig, DEPLOYMENT_ENVIRONMENTS } from '../../ops/payment/deployment-config.mjs';
 import { StripeTestAdapter, StripeAdapter, STRIPE_RECONCILIATION_EVENT_TYPES, STRIPE_PROVIDER_ID } from '../../ops/payment/stripe-adapter.mjs';
 import {
@@ -25,11 +24,6 @@ import { parseRawBody, rawBodyToString, setSafeResponseHeaders, handlePreflight,
 import { sendErrorResponse } from './error-contract.mjs';
 import { getDefaultLogger } from '../../ops/payment/structured-logging.mjs';
 import { generateCorrelationId } from '../../ops/payment/structured-logging.mjs';
-
-const OPS_DIR = join(process.cwd(), 'ops');
-const PAYMENT_DIR = join(OPS_DIR, 'payment');
-
-const logger = getDefaultLogger();
 
 /* Trigger PROP.9 reconciliation */
 async function triggerReconciliation(webhookEvent, paymentRecord) {
@@ -54,6 +48,9 @@ export default async function handler(req, res) {
   // In Workers: worker.mjs injects config via req.config
   // In local tests: handler is called directly without worker, so fall back to buildConfigFromEnv()
   const config = req.config || buildConfigFromEnv();
+
+  // Request-scoped logger (injected by worker) with local test fallback
+  const logger = req.logger || getDefaultLogger();
 
   // CORS from config
   const origins = config.allowed_origins ? config.allowed_origins.split(',').map(o => o.trim()) : [];
@@ -174,9 +171,16 @@ export default async function handler(req, res) {
 
   try {
     // Get storage adapter
-    const storage = config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST
-      ? createStorageAdapter({ environment: 'TEST', config: { baseDir: join(PAYMENT_DIR, 'private', 'test-runtime') } })
-      : createBoundProductionStorageAdapter(config);
+    let storage;
+    if (config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
+      // LOCAL_TEST: lazy import Node-only path module and construct test path
+      const { join } = await import('node:path');
+      const baseDir = join(process.cwd(), 'ops', 'payment', 'private', 'test-runtime');
+      storage = await createStorageAdapter({ environment: 'TEST', config: { baseDir } });
+    } else {
+      // STAGING_TEST / PRODUCTION_DISABLED: governed shared storage
+      storage = createBoundProductionStorageAdapter(config);
+    }
 
     // Find portal session via governed storage
     let portalSession = null;
