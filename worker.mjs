@@ -1,8 +1,9 @@
-/* Nexora — Cloudflare Workers Entry Point (PROP.17 HOTFIX 7)
+/* Nexora — Cloudflare Workers Entry Point (PROP.17 HOTFIX 8)
    Route-before-config: URL → route → lightweight config → 404/405 → full config → handler.
    Unknown routes return 404 WITHOUT validating payment/storage/Stripe secrets.
    Logger initialized from Cloudflare env bindings.
-   Statically analyzable lazy handler imports — no dynamic import(pathVariable). */
+   Statically analyzable lazy handler imports — no dynamic import(pathVariable).
+   Request-scoped logger injected into handlers for correct environment telemetry. */
 
 import { buildConfigFromEnv, DEPLOYMENT_ENVIRONMENTS } from './ops/payment/deployment-config.mjs';
 import { createWebhookVerifier } from './ops/payment/webhook-verifier.mjs';
@@ -87,7 +88,7 @@ class WorkersResponseAdapter {
 }
 
 /* Cloudflare Workers Request adapter */
-function createRequestAdapter(cfRequest, env) {
+function createRequestAdapter(cfRequest, env, logger = null, correlationId = null) {
   const url = new URL(cfRequest.url);
   const path = url.pathname;
   const query = {};
@@ -95,8 +96,9 @@ function createRequestAdapter(cfRequest, env) {
 
   const headers = {};
   for (const [key, value] of cfRequest.headers) headers[key.toLowerCase()] = value;
+  // Use pre-computed correlationId if provided (Worker fetch handler), else fallback to headers or generate
   if (!headers['x-correlation-id'] && !headers['x-request-id']) {
-    headers['x-correlation-id'] = generateCorrelationId();
+    headers['x-correlation-id'] = correlationId || generateCorrelationId();
   }
 
   return {
@@ -109,6 +111,7 @@ function createRequestAdapter(cfRequest, env) {
     cf: cfRequest.cf,
     _cfRequest: cfRequest,
     _env: env,
+    logger, // Request-scoped logger from Worker env
   };
 }
 
@@ -194,7 +197,7 @@ async function handleWebhook(request, env, config, correlationId, logger, resAda
   }
 
   // Create request adapter with parsed body and verified flag
-  const reqAdapter = createRequestAdapter(request, env);
+  const reqAdapter = createRequestAdapter(request, env, logger, correlationId);
   reqAdapter.body = stripeEvent;
   reqAdapter.rawBody = rawBody;
   reqAdapter.signatureVerified = true;
@@ -297,8 +300,8 @@ export default {
     const logger = createLogger(env, correlationId);
     const startTime = Date.now();
 
-    // 10. Create request/response adapters
-    const reqAdapter = createRequestAdapter(request, env);
+    // 10. Create request/response adapters (with request-scoped logger and correlationId)
+    const reqAdapter = createRequestAdapter(request, env, logger, correlationId);
     reqAdapter.params = {}; // exact matching, no params
     reqAdapter.config = config; // Pass config so handlers don't re-read env
 
