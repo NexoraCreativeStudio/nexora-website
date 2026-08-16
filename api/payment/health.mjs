@@ -6,8 +6,6 @@
 import { buildConfigFromEnv, DEPLOYMENT_ENVIRONMENTS } from '../../ops/payment/deployment-config.mjs';
 import { getDefaultLogger } from '../../ops/payment/structured-logging.mjs';
 
-const logger = getDefaultLogger();
-
 /* Deployment state model (PROP.15 §18-20) */
 export const DEPLOYMENT_STATE = {
   /* Health: runtime is alive and config is parseable */
@@ -36,6 +34,10 @@ export default async function handler(req, res) {
   // In Workers: worker.mjs injects config via req.config
   // In local tests: handler is called directly without worker, so fall back to buildConfigFromEnv()
   const config = req.config || buildConfigFromEnv();
+
+  // Use request-scoped logger from worker (correct Cloudflare env) if injected
+  // In local tests: req.logger absent, fall back to getDefaultLogger()
+  const logger = req.logger || getDefaultLogger();
 
   // CORS
   if (config.allowed_origins) {
