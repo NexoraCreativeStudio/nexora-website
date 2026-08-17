@@ -243,6 +243,63 @@ export class SafeLogger {
       session_id: data.sessionId,
     });
   }
+
+  /* Webhook-specific log helpers (PROP.14/16/17) */
+  logWebhookSignatureMissing(data) {
+    this.warn('webhook_signature_missing', {
+      correlation_id: data.correlationId,
+    });
+  }
+
+  logWebhookPayloadInvalid(data) {
+    this.warn('webhook_payload_invalid', {
+      correlation_id: data.correlationId,
+      error: data.error,
+    });
+  }
+
+  logWebhookSignatureInvalid(data) {
+    this.warn('webhook_signature_invalid', {
+      correlation_id: data.correlationId,
+      reason: data.reason,
+    });
+  }
+
+  logWebhookUnsupportedEvent(data) {
+    this.info('webhook_unsupported_event', {
+      correlation_id: data.correlationId,
+      event_type: data.eventType,
+    });
+  }
+
+  logWebhookEnvironmentMismatch(data) {
+    this.warn('webhook_environment_mismatch', {
+      correlation_id: data.correlationId,
+      expected: data.expected,
+      actual: data.actual,
+    });
+  }
+
+  logWebhookMissingLineage(data) {
+    this.warn('webhook_missing_lineage', {
+      correlation_id: data.correlationId,
+    });
+  }
+
+  logWebhookDuplicate(data) {
+    this.info('webhook_duplicate', {
+      correlation_id: data.correlationId,
+      idempotency_key: data.idempotencyKey,
+      event_id: data.eventId,
+    });
+  }
+
+  logWebhookApplicationFailed(data) {
+    this.error('webhook_application_failed', {
+      correlation_id: data.correlationId,
+      reasons: data.reasons,
+    });
+  }
 }
 
 /* Default logger instance */
