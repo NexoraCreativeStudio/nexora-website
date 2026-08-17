@@ -243,8 +243,14 @@ export class ProductionStorageAdapter extends PaymentStorageAdapter {
 }
 
 /* ------------------------------------------------------------------ */
-/* Factory — creates adapter based on environment and config         */
+/* TEST Adapter Registry (PROP.17)                                    */
 /* ------------------------------------------------------------------ */
+let _TestFileStorageAdapter = null;
+export function setTestFileStorageAdapter(adapter) {
+  _TestFileStorageAdapter = adapter;
+}
+
+/* Factory — creates adapter based on environment and config         */
 export function createStorageAdapter(opts = {}) {
   const environment = opts.environment || 'TEST';
 
@@ -255,21 +261,17 @@ export function createStorageAdapter(opts = {}) {
     return new ProductionStorageAdapter(opts);
   }
 
-  // TEST/SANDBOX — use Node-only file adapter (imported dynamically to avoid bundling node:fs in Workers)
-  // This dynamic import prevents node:fs from being bundled in Cloudflare Workers
+  // TEST/SANDBOX — use Node-only file adapter (set via setTestFileStorageAdapter)
   if (environment === 'TEST') {
-    return createTestFileStorageAdapter(opts);
+    if (!_TestFileStorageAdapter) {
+      throw new Error('TEST environment requires TestFileStorageAdapter to be set via setTestFileStorageAdapter');
+    }
+    return new _TestFileStorageAdapter({
+      baseDir: opts.config?.baseDir || _PRIVATE_DIR || getPrivateDirSync(),
+    });
   }
 
   throw new Error(`Unknown environment: ${environment}`);
-}
-
-/* Dynamic factory for TestFileStorageAdapter to avoid bundling node:fs */
-async function createTestFileStorageAdapter(opts = {}) {
-  const { TestFileStorageAdapter } = await import('./runtime-storage-file-node.mjs');
-  return new TestFileStorageAdapter({
-    baseDir: opts.config?.baseDir || await getPrivateDir(),
-  });
 }
 
 /* Synchronous version for environments where dynamic import works */
@@ -284,8 +286,9 @@ export function createStorageAdapterSync(opts = {}) {
   }
 
   // TEST/SANDBOX — use Node-only file adapter
-  // This import path will fail in Cloudflare Workers (as intended - TEST environment shouldn't run there)
-  const { TestFileStorageAdapter } = require('./runtime-storage-file-node.mjs');
+  // Using runtime variable prevents Wrangler from statically analyzing and bundling the import
+  const testFileAdapterPath = './runtime-storage-file-node.mjs';
+  const { TestFileStorageAdapter } = require(testFileAdapterPath);
   // getPrivateDir is now async, but this sync function only runs in Node.js TEST context
   // where initNodePaths has already run or will run synchronously via require
   return new TestFileStorageAdapter({

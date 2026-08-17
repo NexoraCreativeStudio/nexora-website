@@ -15,7 +15,7 @@ import {
   applyReconciliation,
   TestPaymentAdapter,
   buildPaymentRecord
-} from '../../ops/payment/payment-validation.mjs';
+} from '../../ops/payment/payment-validation-core.mjs';
 import { markWebhookReceived, markReconciled } from '../../ops/payment/portal-session.mjs';
 import { createStorageAdapter } from '../../ops/payment/runtime-storage.mjs';
 import { createBoundProductionStorageAdapter } from '../../ops/payment/shared-storage-binding.mjs';

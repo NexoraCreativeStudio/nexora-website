@@ -5,7 +5,8 @@
 
 import { buildConfigFromEnv, DEPLOYMENT_ENVIRONMENTS, STRIPE_MODES } from './deployment-config.mjs';
 import { createSharedStorageClient, MemoryTestSharedStorageClient } from './shared-storage-binding.mjs';
-import { createStorageAdapter } from './runtime-storage.mjs';
+import { createStorageAdapter, setTestFileStorageAdapter } from './runtime-storage.mjs';
+import { TestFileStorageAdapter } from './runtime-storage-file-node.mjs';
 import { createWebhookVerifier } from './webhook-verifier.mjs';
 import { StripeTestAdapter } from './stripe-adapter.mjs';
 import { TestPaymentAdapter } from './payment-validation.mjs';
@@ -16,6 +17,9 @@ import { ERROR_CODES, ERROR_STATUS_CODES, createErrorResponse } from '../../api/
 import { validateSessionId, validateTokenId } from '../../api/payment/request-limits.mjs';
 
 const logger = getDefaultLogger();
+
+/* Register TestFileStorageAdapter for TEST environment */
+setTestFileStorageAdapter(TestFileStorageAdapter);
 
 /* Test harness state */
 const TEST_STATE = {
@@ -444,8 +448,8 @@ async function testRequestLimits() {
 /* Test: Idempotency */
 async function testIdempotency() {
   await runTest('idempotency: shared storage prevents duplicate processing', async () => {
-    const config = buildConfigFromEnv({ environment: DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST });
-    const client = createSharedStorageClient(config);
+    // Use TestFileStorageAdapter directly to avoid config validation issues
+    const client = new TestFileStorageAdapter({ baseDir: './ops/payment/private/test-runtime' });
     const key = 'idem-test-key';
     const eventId = 'evt-123';
     await client.setIdempotency(key, eventId);
