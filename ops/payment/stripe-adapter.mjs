@@ -34,7 +34,7 @@ import {
   buildWebhookFingerprint,
   verifyWebhookFingerprint,
   sha256hex,
-} from './payment-validation.mjs';
+} from './payment-validation-core.mjs';
 
 /* Stripe-specific constants */
 export const STRIPE_PROVIDER_ID = 'STRIPE';

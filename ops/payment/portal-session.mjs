@@ -6,7 +6,7 @@
 import { createHash } from 'node:crypto';
 import { toMinorUnits, fromMinorUnits, deriveIdempotencyKey, buildStripeMetadata } from './stripe-adapter.mjs';
 import { TOKEN_SCHEMA, TOKEN_ID_RE, checkTokenUsable, markTokenUsed, validatePaymentToken } from './token-model.mjs';
-import { PAYMENT_REQUEST_SCHEMA, PAYMENT_SCHEMA, RECONCILIATION_SCHEMA, PAYMENT_STATUSES, PAYMENT_ENVIRONMENTS, PROVIDER_IDS, buildPaymentRecord, buildWebhookFingerprint } from './payment-validation.mjs';
+import { PAYMENT_REQUEST_SCHEMA, PAYMENT_SCHEMA, RECONCILIATION_SCHEMA, PAYMENT_STATUSES, PAYMENT_ENVIRONMENTS, PROVIDER_IDS, buildPaymentRecord, buildWebhookFingerprint } from './payment-validation-core.mjs';
 
 export const PORTAL_SESSION_SCHEMA = 'nexora-portal-session/v1';
 export const PORTAL_SESSION_ID_RE = /^PSS-[A-Za-z0-9_-]{43}$/; /* 256-bit entropy, URL-safe base64 */
