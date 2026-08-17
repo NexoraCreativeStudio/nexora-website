@@ -157,9 +157,13 @@ export default async function handler(req, res) {
   const webhookEvent = normalized.event;
   webhookEvent.signature_verified = true;
 
-  // Validate webhook contract
-  if (webhookEvent.environment !== config.environment) {
-    logger.logWebhookEnvironmentMismatch({ correlationId, expected: config.environment, actual: webhookEvent.environment });
+  // Expected provider environment derived from stripe_mode (not deployment environment)
+  // STRIPE_MODE=TEST -> TEST, STRIPE_MODE=LIVE -> PRODUCTION
+  const expectedProviderEnvironment = config.stripe_mode === 'LIVE' ? 'PRODUCTION' : 'TEST';
+
+  // Validate webhook contract: provider environment must match expected from stripe_mode
+  if (webhookEvent.environment !== expectedProviderEnvironment) {
+    logger.logWebhookEnvironmentMismatch({ correlationId, expected: expectedProviderEnvironment, actual: webhookEvent.environment });
     return sendErrorResponse(res, ERROR_CODES.WEBHOOK_ENVIRONMENT_MISMATCH, correlationId);
   }
 
