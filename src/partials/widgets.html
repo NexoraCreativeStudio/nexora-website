@@ -59,3 +59,46 @@
 <script src="/assets/js/calendly-init.js"></script>
 
   <script src="/assets/js/cta-tracking.js"></script>
+
+<!-- Test Payment Button Handler (PROP.17 HOTFIX16) -->
+<script>
+(function() {
+  const btn = document.getElementById('test-pay-btn');
+  if (!btn) return;
+
+  const TOKEN_EXAMPLE_ID = 'PAT-AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8';
+  // Local preview: point to staging worker; production uses relative path
+  const CHECKOUT_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+    ? 'https://nexora-payment-staging.nexorastudio-uk.workers.dev/api/payment/checkout-create'
+    : '/api/payment/checkout-create';
+
+  btn.addEventListener('click', async function() {
+    btn.disabled = true;
+    btn.textContent = 'Creating checkout…';
+
+    try {
+      const res = await fetch(CHECKOUT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: TOKEN_EXAMPLE_ID })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error?.message || 'Checkout creation failed');
+      }
+
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        throw new Error('No checkout_url returned');
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Pay Invoice — TEST';
+      alert('Test payment failed: ' + err.message);
+    }
+  });
+})();
+</script>

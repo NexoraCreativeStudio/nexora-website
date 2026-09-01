@@ -88,6 +88,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+// Local .env loader for secure CLI operations
+try {
+  const envPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.env');
+  if (fs.existsSync(envPath)) {
+    const content = fs.readFileSync(envPath, 'utf8');
+    for (const line of content.split('\n')) {
+      const [key, ...val] = line.trim().split('=');
+      if (key && !key.startsWith('#') && key.trim()) {
+        process.env[key.trim()] = val.join('=').replace(/^['"]|['"]$/g, '');
+      }
+    }
+  }
+} catch (err) { /* ignore .env errors */ }
 import {
   OUT_DIR,
   BILLING_SCHEMA,
@@ -483,74 +497,207 @@ function nextBillingFor(start) {
 }
 
 /* ------------------------------------------------------------------ */
-/* CLI                                                                */
+/* link-installment (PROP.18)                                          */
 /* ------------------------------------------------------------------ */
-function usage(out) {
-  out.write(`Nexora Governed Invoice & Billing Engine (PROP.8)
-Turns an EXECUTED Agreement Execution (PROP.7) + the governed READY Agreement
-(PROP.5) into a billing schedule, governed invoice records, Go-Live modelling
-and recurring-billing readiness. Evidence-driven only.
+async function runLinkInstallment(opts) {
+  const invoicePath = path.resolve(opts.positional[1]);
+  if (!invoicePath) { usage(process.stderr); process.stderr.write('link-installment requires <invoice.json>\n'); return 2; }
+  if (classifyBillingInput(invoicePath) === 'UNSAFE') {
+    process.stderr.write(`Refusing unsafe billing input: ${invoicePath}\nBilling files must come from ops/billing/out|private|examples.\n`); return 1;
+  }
+  const invoice = readJson(invoicePath);
+  if (!invoice || invoice.schema !== INVOICE_SCHEMA) {
+    process.stderr.write('Not an invoice record (schema mismatch).\n'); return 1;
+  }
+  if (invoice.status !== 'ISSUED') {
+    process.stderr.write(`Invoice must be ISSUED to create a payment link — current status: ${invoice.status}\n`); return 1;
+  }
 
-Boundaries: Invoice != Payment · ISSUED != PAID · EXECUTED != PAID ·
-No mark-paid / --force-paid / --fake-payment · No network/payment calls ·
-VAT UNDETERMINED · Due date = issue + 7 days · AI recurring starts ONLY at a
-recorded Go-Live (never inferred) · Care billed monthly in advance.
+  // Determine milestone index from invoice_type or --milestone
+  let milestoneIndex = 1;
+  if (opts.milestone) {
+    if (!/^\d+$/.test(opts.milestone)) {
+      process.stderr.write('--milestone must be a positive integer (1-based)\n'); return 1;
+    }
+    milestoneIndex = Number(opts.milestone);
+  } else if (invoice.invoice_type === 'milestone') {
+    // Extract from invoice metadata if available
+    milestoneIndex = invoice.milestone_index || 1;
+  } else if (invoice.invoice_type === 'recurring_setup') {
+    milestoneIndex = 0; // Setup fee is milestone 0
+  }
 
-Commands:
-  node ops/billing/billing.mjs schedule <agreement.json> <execution-record.json> [options]
-  node ops/billing/billing.mjs create <schedule.json> --item <index> [options]
-  node ops/billing/billing.mjs issue <invoice.json> [options]
-  node ops/billing/billing.mjs void <invoice.json> [options]
-  node ops/billing/billing.mjs cancel <invoice.json> [options]
-  node ops/billing/billing.mjs verify <schedule-or-invoice.json>
-  node ops/billing/billing.mjs list-due <dir> [--as-of <YYYY-MM-DD>]
-  node ops/billing/billing.mjs record-go-live --execution <record.json> --occurred-at <YYYY-MM-DD> --evidence-ref <ref> [options]
-  node ops/billing/billing.mjs recurring-status <schedule.json> [--go-live <go-live.json>]
+  // Validate client identity for issued invoice
+  if (!invoice.client || !invoice.client.company) {
+    process.stderr.write('Invoice missing governed client identity (client.company). Cannot create payment link.\n'); return 1;
+  }
 
-schedule options:
-  --generated-at <ISO>  deterministic timestamp override (tests)
-  --output <dir>        write into <dir> (default ops/billing/out)
-  --example             mark the schedule "_example": true
-  --overwrite           allow replacing an existing schedule for the same id
-  --check               validate only (no write)
+  // Load configuration from environment — MUST match Worker bindings exactly.
+  // No silent defaults for SHARED_STORAGE_NAMESPACE — fail loud if missing.
+  const paymentRuntimeEnv = process.env.PAYMENT_RUNTIME_ENV || process.env.PAYMENT_ENVIRONMENT || 'STAGING_TEST';
 
-create options:
-  --item <index>        schedule item index (0-based)
-  --go-live <path>      Go-Live record (required for AI recurring items)
-  --care-start <date>   governed Care start date (required for Care items)
-  --milestone-evidence <ref>  governed milestone trigger evidence
-                        (required for milestone > 1 — OWNER/OPERATIONS DECISION)
-  --client-name <name>  client name
-  --client-company <c>  client company
-  --project-title <t>   project title
-  --issue               create directly as ISSUED (satisfies gate + due date)
-  --issue-date <date>   issue date (default: today); due = +7 days
-  --generated-at <ISO>  deterministic timestamp override (tests)
-  --output <dir>        write into <dir> (default ops/billing/out)
-  --example             mark the invoice "_example": true
-  --overwrite           allow replacing a non-issued invoice for the same id
+  // For STAGING_TEST and PRODUCTION_DISABLED, SHARED_STORAGE_NAMESPACE MUST be explicitly set
+  // (no LOCAL_TEST fallback — that creates the namespace mismatch bug)
+  const sharedStorageNamespace = process.env.SHARED_STORAGE_NAMESPACE;
+  if ((paymentRuntimeEnv === 'STAGING_TEST' || paymentRuntimeEnv === 'PRODUCTION_DISABLED') && !sharedStorageNamespace) {
+    process.stderr.write(`FATAL: SHARED_STORAGE_NAMESPACE is required for ${paymentRuntimeEnv} environment.\n`);
+    process.stderr.write(`Set SHARED_STORAGE_NAMESPACE (e.g., nexora:payment:STAGING_TEST) in your environment.\n`);
+    return 1;
+  }
 
-issue/void/cancel options:
-  --generated-at <ISO>  deterministic timestamp override (tests)
-  --out <path>          explicit output path
-  --overwrite           allow replacing a non-issued target record
-  --issue-date <date>   issue date (issue only)
+  const config = {
+    stripe_mode: process.env.STRIPE_MODE || 'TEST',
+    // Use Worker deployment config values exactly — must match Worker bindings
+    stripe_success_url: process.env.STRIPE_SUCCESS_URL || 'https://nexora-payment-staging.nexorastudio-uk.workers.dev/payment/success?session_id={CHECKOUT_SESSION_ID}',
+    stripe_cancel_url: process.env.STRIPE_CANCEL_URL || 'https://nexora-payment-staging.nexorastudio-uk.workers.dev/payment/cancel',
+    environment: paymentRuntimeEnv,
+  };
 
-record-go-live options:
-  --execution <path>    EXECUTED execution record (proves completion)
-  --occurred-at <date>  Go-Live date (YYYY-MM-DD)
-  --evidence-ref <ref>  explicit operational evidence reference (required)
-  --output <dir>        write into <dir> (default ops/billing/out)
-  --generated-at <ISO>  deterministic timestamp override (tests)
-  --example             mark the record "_example": true
-  --overwrite           allow replacing an existing Go-Live record
+  // Dynamic imports for payment modules
+  const { buildPaymentToken, generateTokenId, validatePaymentToken } = await import('../payment/token-model.mjs');
+  const { buildPortalSession, generatePortalSessionId, attachCheckoutSession } = await import('../payment/portal-session.mjs');
+  const { StripeAdapter, deriveIdempotencyKey } = await import('../payment/stripe-adapter.mjs');
+  const { createBoundProductionStorageAdapter, registerNeonWorkersProvider } = await import('../payment/shared-storage-binding.mjs');
+  const { NeonInstallmentClient } = await import('../payment/neon-installment-storage.mjs');
+  const { buildConfigFromEnv } = await import('../payment/deployment-config.mjs');
 
-Input safety:
-  Agreements    -> ops/agreements/private|examples and
-                   ops/proposals/private|examples (else refused)
-  Executions    -> ops/execution/out|private|examples (else refused)
-  Billing files -> ops/billing/out|private|examples (else refused)
-  Committed examples must be marked "_example": true.`);
+  // Register neon-workers provider so it's available for local CLI (same as Worker startup)
+  await registerNeonWorkersProvider();
+
+  // Build deployment config for storage — pass explicit namespace to override LOCAL_TEST default
+  const envForConfig = {
+    ...process.env,
+    PAYMENT_RUNTIME_ENV: paymentRuntimeEnv,
+    SHARED_STORAGE_NAMESPACE: sharedStorageNamespace,
+    // Also pass through SHARED_STORAGE_PROVIDER if set (e.g., neon-workers)
+    SHARED_STORAGE_PROVIDER: process.env.SHARED_STORAGE_PROVIDER,
+  };
+  const deployConfig = buildConfigFromEnv(envForConfig);
+
+  try {
+    // 1. Create storage adapter
+    const storage = createBoundProductionStorageAdapter(deployConfig);
+
+    // 2. Get or create payment request (need to find or create one for this invoice + milestone)
+    // Use the underlying SharedStorageClient for generic KV operations
+    const kvStore = storage.client;
+    let paymentRequest = null;
+    if (invoice.payment_request_id) {
+      paymentRequest = await kvStore.get(`request:${invoice.payment_request_id}`);
+    }
+    if (!paymentRequest) {
+      // Create a payment request for this installment
+      const requestId = `REQ-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
+      paymentRequest = {
+        schema: 'nexora-payment-request/v1',
+        request_id: requestId,
+        invoice_id: invoice.invoice_id,
+        invoice_version: invoice.invoice_version,
+        amount_requested: invoice.total,
+        currency: invoice.currency,
+        environment: config.stripe_mode === 'LIVE' ? 'PRODUCTION' : 'TEST',
+        description: `Installment ${milestoneIndex} for ${invoice.invoice_id}`,
+        created_at: new Date().toISOString(),
+        status: 'ACTIVE',
+      };
+      await kvStore.set(`request:${requestId}`, JSON.stringify(paymentRequest));
+    }
+
+    // Store invoice in shared storage so pay-redirect can find it
+    await kvStore.set(`invoice:${invoice.invoice_id}`, JSON.stringify(invoice));
+
+    // 3. Create PAT token
+    const tokenResult = buildPaymentToken({
+      invoice,
+      request: paymentRequest,
+      ttlSeconds: 7 * 24 * 60 * 60, // 7 days
+      example: opts.example === true,
+    });
+    if (!tokenResult.ok) {
+      process.stderr.write(`Token creation failed: ${tokenResult.reasons.join('; ')}\n`); return 1;
+    }
+    const token = tokenResult.token;
+    await kvStore.set(`token:${token.token_id}`, JSON.stringify(token));
+
+    // 4. Create portal session
+    const sessionResult = buildPortalSession({
+      token,
+      paymentRequest,
+      invoice,
+      ttlSeconds: 30 * 60, // 30 minutes for Stripe checkout
+      example: opts.example === true,
+    });
+    if (!sessionResult.ok) {
+      process.stderr.write(`Portal session creation failed: ${sessionResult.reasons.join('; ')}\n`); return 1;
+    }
+    let portalSession = sessionResult.session;
+    await storage.createSession(portalSession);
+
+    // 5. Create Stripe Checkout Session
+    const stripeAdapter = new StripeAdapter({
+      environment: config.stripe_mode === 'LIVE' ? 'PRODUCTION' : 'TEST',
+      config: {
+        success_url: config.stripe_success_url,
+        cancel_url: config.stripe_cancel_url,
+        clientReferenceId: portalSession.session_id,
+      },
+    });
+
+    const stripeSession = await stripeAdapter.createCheckoutSession(paymentRequest);
+    const attached = attachCheckoutSession(portalSession, stripeSession);
+    if (!attached.ok) {
+      process.stderr.write(`Failed to attach checkout session: ${attached.reasons.join('; ')}\n`); return 1;
+    }
+    portalSession = attached.session;
+    await storage.updateSession(portalSession);
+
+    // 6. Create installment record in Neon
+    let installmentId = null;
+    if (storage.client && typeof storage.client.query === 'function') {
+      const installmentClient = new NeonInstallmentClient({ dbClient: storage.client });
+      const provider = 'STRIPE';
+      const installmentResult = await installmentClient.createInstallment({
+        invoice_id: invoice.invoice_id,
+        invoice_version: invoice.invoice_version,
+        milestone_index: milestoneIndex,
+        amount_minor: Math.round(invoice.total * 100),
+        currency: invoice.currency,
+        status: 'PORTAL_CREATED',
+        payment_request_id: paymentRequest.request_id,
+        portal_session_id: portalSession.session_id,
+        pat_token_id: token.token_id,
+        provider,
+        provider_checkout_session_id: stripeSession.id,
+        provider_payment_intent_id: null,
+        idempotencyKey: deriveIdempotencyKey(paymentRequest.request_id, 'checkout'),
+      });
+      installmentId = installmentResult.id;
+    }
+
+    // 7. Build payment link URL
+    // Use actual Worker URL — staging.nexorastudio.uk DNS not configured
+    const baseUrl = process.env.PAYMENT_BASE_URL || (config.environment === 'PRODUCTION_DISABLED' ? 'https://nexorastudio.uk' : 'https://nexora-payment-staging.nexorastudio-uk.workers.dev');
+    const paymentLink = `${baseUrl}/pay/${token.token_id}`;
+
+    // 8. Output result
+    process.stdout.write('Payment link created successfully\n');
+    process.stdout.write(`  Invoice: ${invoice.invoice_id} (${invoice.invoice_type})\n`);
+    process.stdout.write(`  Amount: ${invoice.total} ${invoice.currency}\n`);
+    process.stdout.write(`  Milestone: ${milestoneIndex}\n`);
+    process.stdout.write(`  PAT Token: ${token.token_id}\n`);
+    process.stdout.write(`  Portal Session: ${portalSession.session_id}\n`);
+    process.stdout.write(`  Stripe Checkout: ${stripeSession.id}\n`);
+    if (installmentId) process.stdout.write(`  Installment ID: ${installmentId}\n`);
+    process.stdout.write(`\nPayment link: ${paymentLink}\n`);
+    process.stdout.write('\nSend this link to the client. The token expires in 7 days.\n');
+    process.stdout.write('Token is single-use — marked USED only on confirmed payment reconciliation (webhook).\n');
+
+    return 0;
+  } catch (err) {
+    process.stderr.write(`link-installment failed: ${err.message}\n`);
+    console.error(err);
+    return 1;
+  }
 }
 
 function parseArgs(args) {
@@ -561,6 +708,7 @@ function parseArgs(args) {
     else if (a === '--go-live') opts.goLive = args[++i];
     else if (a === '--care-start') opts.careStart = args[++i];
     else if (a === '--milestone-evidence') opts.milestoneEvidence = args[++i];
+    else if (a === '--milestone') opts.milestone = args[++i];
     else if (a === '--client-name') opts.clientName = args[++i];
     else if (a === '--client-company') opts.clientCompany = args[++i];
     else if (a === '--project-title') opts.projectTitle = args[++i];
@@ -602,6 +750,7 @@ function main() {
     case 'list-due': return runListDue(opts);
     case 'record-go-live': return runRecordGoLive(opts);
     case 'recurring-status': return runRecurringStatus(opts);
+    case 'link-installment': return runLinkInstallment(opts);
     default:
       usage(process.stderr);
       return cmd ? 2 : 0;
@@ -609,5 +758,5 @@ function main() {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  process.exit(main());
+  main().then(code => process.exit(code)).catch(err => { console.error(err); process.exit(1); });
 }
