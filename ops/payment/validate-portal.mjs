@@ -697,8 +697,8 @@ const testWebhookEvent = {
   _test_only: true,
 };
 
-runTest('RECON: applyPaymentEvent records evidence', () => {
-  const paymentBuild = buildPaymentRecord(exampleRequest, {
+runTest('RECON: applyPaymentEvent records evidence', async () => {
+  const paymentBuild = await buildPaymentRecord(exampleRequest, {
     example: true,
     createdAt: '2026-08-15T09:00:00.000Z'
   });
@@ -828,8 +828,8 @@ runTest('RECON: TestPaymentAdapter detects OVERPAYMENT', () => {
   assert(result.outcome === 'OVERPAYMENT', 'Outcome is OVERPAYMENT');
 });
 
-runTest('RECON: applyReconciliation updates payment status', () => {
-  const paymentBuild = buildPaymentRecord(exampleRequest, {
+runTest('RECON: applyReconciliation updates payment status', async () => {
+  const paymentBuild = await buildPaymentRecord(exampleRequest, {
     example: true,
     createdAt: '2026-08-15T09:00:00.000Z'
   });
@@ -871,8 +871,8 @@ runTest('RECON: applyReconciliation updates payment status', () => {
   assert(result.record.status === 'PAID', 'Status updated to PAID');
 });
 
-runTest('RECON: applyReconciliation does not mark PAID for WRONG_AMOUNT', () => {
-  const paymentBuild = buildPaymentRecord(exampleRequest, {
+runTest('RECON: applyReconciliation does not mark PAID for WRONG_AMOUNT', async () => {
+  const paymentBuild = await buildPaymentRecord(exampleRequest, {
     example: true,
     createdAt: '2026-08-15T09:00:00.000Z'
   });
@@ -990,7 +990,7 @@ runTest('INVOICE: buildInvoiceRecord creates valid invoice', () => {
    END-TO-END PIPELINE TEST
    ============================================================ */
 
-runTest('E2E: Complete token → session → checkout → webhook → reconciliation flow', () => {
+runTest('E2E: Complete token → session → checkout → webhook → reconciliation flow', async () => {
   const tokenResult = buildPaymentToken({
     invoice: exampleInvoice,
     request: exampleRequest,
@@ -1040,7 +1040,7 @@ runTest('E2E: Complete token → session → checkout → webhook → reconcilia
     '5a. Audit states WEBHOOK RECEIVED != PAID'
   );
 
-  const paymentBuild = buildPaymentRecord(exampleRequest, {
+  const paymentBuild = await buildPaymentRecord(exampleRequest, {
     example: true,
     createdAt: '2026-08-15T09:00:00.000Z'
   });

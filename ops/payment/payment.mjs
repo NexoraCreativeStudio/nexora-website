@@ -151,7 +151,7 @@ function refuseOverwrite(target, opts) {
 /* ------------------------------------------------------------------ */
 /* request                                                             */
 /* ------------------------------------------------------------------ */
-function runRequest(opts) {
+async function runRequest(opts) {
   const invoicePath = path.resolve(opts.positional[1]);
   if (!invoicePath) { usage(process.stderr); process.stderr.write('request requires <invoice.json>\n'); return 2; }
   if (classifyBillingInput(invoicePath) === 'UNSAFE') {
@@ -174,7 +174,7 @@ function runRequest(opts) {
     return 1;
   }
   const req = built.request;
-  const v = validatePaymentRequest(req, { requireExampleMarker: opts.example === true });
+  const v = await validatePaymentRequest(req, { requireExampleMarker: opts.example === true });
   if (v.failures.length > 0) {
     process.stderr.write(`PAYMENT REQUEST INVALID — ${v.failures.length} issue(s).\n`);
     for (const f of v.failures) process.stderr.write(`  FAIL ${f}\n`);
@@ -195,21 +195,21 @@ function runRequest(opts) {
 /* ------------------------------------------------------------------ */
 /* pay (create payment record from request)                            */
 /* ------------------------------------------------------------------ */
-function runPay(opts) {
+async function runPay(opts) {
   const reqPath = path.resolve(opts.positional[1]);
   if (!reqPath) { usage(process.stderr); process.stderr.write('pay requires <request.json>\n'); return 2; }
   if (classifyPaymentInput(reqPath) === 'UNSAFE') {
     process.stderr.write(`Refusing unsafe payment input: ${reqPath}\nPayment files must come from ops/payment/out|private|examples.\n`); return 1;
   }
   const req = readJson(reqPath);
-  const built = buildPaymentRecord(req, { createdAt: nextStamp(opts), example: opts.example === true });
+  const built = await buildPaymentRecord(req, { createdAt: nextStamp(opts), example: opts.example === true });
   if (!built.ok) {
     process.stderr.write(`PAYMENT RECORD REFUSED — ${built.reasons.length} issue(s).\n`);
     for (const r of built.reasons) process.stderr.write(`  FAIL ${r}\n`);
     return 1;
   }
   const payment = built.payment;
-  const v = validatePaymentRecord(payment, { requireExampleMarker: opts.example === true });
+  const v = await validatePaymentRecord(payment, { requireExampleMarker: opts.example === true });
   if (v.failures.length > 0) {
     process.stderr.write(`PAYMENT RECORD INVALID — ${v.failures.length} issue(s).\n`);
     for (const f of v.failures) process.stderr.write(`  FAIL ${f}\n`);
@@ -229,7 +229,7 @@ function runPay(opts) {
 /* ------------------------------------------------------------------ */
 /* record-event (normalised webhook/provider event; NOT payment)       */
 /* ------------------------------------------------------------------ */
-function runRecordEvent(opts) {
+async function runRecordEvent(opts) {
   const paymentPath = path.resolve(opts.positional[1]);
   const eventPath = opts.event ? path.resolve(opts.event) : null;
   if (!paymentPath || !eventPath) { usage(process.stderr); process.stderr.write('record-event requires <payment.json> --event <webhook.json>\n'); return 2; }
@@ -252,7 +252,7 @@ function runRecordEvent(opts) {
     process.stderr.write(`EVENT REJECTED — ${applied.reasons.join('; ')}\n`);
     return 1;
   }
-  const v = validatePaymentRecord(applied.record, { requireExampleMarker: false });
+  const v = await validatePaymentRecord(applied.record, { requireExampleMarker: false });
   if (v.failures.length > 0) {
     process.stderr.write(`PAYMENT RECORD INVALID AFTER EVENT — ${v.failures.join('; ')}\n`);
     return 1;
@@ -299,7 +299,7 @@ async function runReconcile(opts) {
     process.stderr.write(`RECONCILIATION REJECTED — ${applied.reasons.join('; ')}\n`);
     return 1;
   }
-  const v = validatePaymentRecord(applied.record, { requireExampleMarker: false });
+  const v = await validatePaymentRecord(applied.record, { requireExampleMarker: false });
   if (v.failures.length > 0) {
     process.stderr.write(`PAYMENT RECORD INVALID AFTER RECONCILIATION — ${v.failures.join('; ')}\n`);
     return 1;
@@ -363,7 +363,7 @@ function runRefundRecord(opts) {
     process.stderr.write(`REFUND RECORD REJECTED — ${applied.reasons.join('; ')}\n`);
     return 1;
   }
-  const v = validatePaymentRecord(applied.record, { requireExampleMarker: false });
+  const v = await validatePaymentRecord(applied.record, { requireExampleMarker: false });
   if (v.failures.length > 0) {
     process.stderr.write(`PAYMENT RECORD INVALID AFTER REFUND — ${v.failures.join('; ')}\n`);
     return 1;
@@ -385,17 +385,19 @@ function nextStam(opts) { return nextStamp(opts); }
 /* ------------------------------------------------------------------ */
 /* verify / status                                                     */
 /* ------------------------------------------------------------------ */
-function runVerify(opts) {
+async function runVerify(opts) {
   const p = path.resolve(opts.positional[1]);
   if (!p) { usage(process.stderr); process.stderr.write('verify requires <file.json>\n'); return 2; }
   if (classifyPaymentInput(p) === 'UNSAFE') { process.stderr.write(`Refusing unsafe payment input: ${p}\n`); return 1; }
   const rec = readJson(p);
   let failures = [];
   if (rec.schema === PAYMENT_SCHEMA) {
-    failures = validatePaymentRecord(rec, { requireExampleMarker: false }).failures;
+    const v = await validatePaymentRecord(rec, { requireExampleMarker: false });
+    failures = v.failures;
     if (failures.length === 0) { process.stdout.write(`OK — payment ${rec.payment_id} (${rec.status}) ${rec.amount_received}/${rec.amount_expected} ${rec.currency} fingerprint valid.\n`); return 0; }
   } else if (rec.schema === PAYMENT_REQUEST_SCHEMA) {
-    failures = validatePaymentRequest(rec, { requireExampleMarker: false }).failures;
+    const v = await validatePaymentRequest(rec, { requireExampleMarker: false });
+    failures = v.failures;
     if (failures.length === 0) { process.stdout.write(`OK — payment request ${rec.request_id} for ${rec.invoice_id} fingerprint valid.\n`); return 0; }
   } else if (rec.schema === WEBHOOK_EVENT_SCHEMA) {
     failures = validateWebhookEvent(rec, { requireExampleMarker: false }).failures;

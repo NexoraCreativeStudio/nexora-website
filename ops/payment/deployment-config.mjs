@@ -249,8 +249,9 @@ export function validateDeploymentConfig(config) {
           reasons.push(`${field} appears to contain a live secret — forbidden`);
         }
       }
-      // For STAGING_TEST/LOCAL_TEST, also check for placeholder patterns (should be real values at runtime)
-      if (config.environment !== 'PRODUCTION_DISABLED') {
+      // For STAGING_TEST, also check for placeholder patterns (should be real values at runtime)
+      // LOCAL_TEST allows placeholder values for local development
+      if (config.environment === DEPLOYMENT_ENVIRONMENTS.STAGING_TEST) {
         for (const pattern of DEPLOYMENT_PLACEHOLDER_PATTERNS) {
           if (pattern.test(config[field])) {
             reasons.push(`${field} appears to be a placeholder — replace with real value for ${config.environment}`);
@@ -420,6 +421,8 @@ export function buildConfigFromEnv(env = process.env) {
     shared_storage_namespace: env.SHARED_STORAGE_NAMESPACE || 'nexora/payment/LOCAL_TEST',
     shared_storage_url: env.SHARED_STORAGE_URL_REF || DEPLOYMENT_PLACEHOLDERS.shared_storage_url,
     shared_storage_token: env.SHARED_STORAGE_TOKEN_REF || DEPLOYMENT_PLACEHOLDERS.shared_storage_token,
+    // Neon database URL (required for postgresql/neon/neon-workers providers)
+    neon_database_url: env.NEON_DATABASE_URL,
     allowed_origins: env.ALLOWED_ORIGINS || 'https://localhost:3000',
     log_level: env.LOG_LEVEL || 'info',
     max_json_body_size: parseInt(env.MAX_JSON_BODY_SIZE, 10) || 1048576,

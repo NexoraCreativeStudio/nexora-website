@@ -16,10 +16,22 @@ import { parseJsonBody, setSafeResponseHeaders, handlePreflight, validateTokenId
 import { getDefaultLogger } from '../../ops/payment/structured-logging.mjs';
 import { generateCorrelationId } from '../../ops/payment/structured-logging.mjs';
 
+// Worker-safe fixture imports — dynamic import with JSON module for Cloudflare Workers compatibility
+let _testInvoice = null;
+let _testRequest = null;
+
+async function loadTestFixtures() {
+  if (_testInvoice && _testRequest) return;
+  const [{ default: invoice }, { default: request }] = await Promise.all([
+    import('../../ops/billing/examples/invoice-issued-example.json', { with: { type: 'json' } }),
+    import('../../ops/payment/examples/payment-request-example.json', { with: { type: 'json' } })
+  ]);
+  _testInvoice = invoice;
+  _testRequest = request;
+}
+
 const OPS_DIR = join(process.cwd(), 'ops');
 const PAYMENT_DIR = join(OPS_DIR, 'payment');
-
-const logger = getDefaultLogger();
 
 /* Build Stripe config from deployment config */
 function buildStripeConfig(config) {
@@ -30,37 +42,30 @@ function buildStripeConfig(config) {
   };
 }
 
-/* Get test invoice fixture */
+/* Get test invoice fixture — async for Cloudflare Workers compatibility */
 async function getTestInvoice(invoiceId) {
-  const file = join(OPS_DIR, 'billing', 'examples', 'invoice-issued-example.json');
-  const { existsSync, readFileSync } = await import('fs');
-  if (existsSync(file)) {
-    const invoice = JSON.parse(readFileSync(file, 'utf8'));
-    if (invoice.invoice_id === invoiceId) return invoice;
-  }
+  await loadTestFixtures();
+  if (_testInvoice.invoice_id === invoiceId) return _testInvoice;
   return null;
 }
 
-/* Get test payment request fixture */
+/* Get test payment request fixture — async for Cloudflare Workers compatibility */
 async function getTestRequest(requestId) {
-  const file = join(PAYMENT_DIR, 'examples', 'payment-request-example.json');
-  const { existsSync, readFileSync } = await import('fs');
-  if (existsSync(file)) {
-    const request = JSON.parse(readFileSync(file, 'utf8'));
-    if (request.request_id === requestId) return request;
-  }
+  await loadTestFixtures();
+  if (_testRequest.request_id === requestId) return _testRequest;
   return null;
 }
 
 /* Lookup payment token (test fixtures only) */
-function lookupToken(tokenId) {
+async function lookupToken(tokenId) {
   if (tokenId === TOKEN_EXAMPLE.token_id) {
     return { token: TOKEN_EXAMPLE, source: 'example' };
   }
   if (TOKEN_ID_RE.test(tokenId)) {
+    await loadTestFixtures();
     const derivedToken = buildPaymentToken({
-      invoice: getTestInvoice('INV-2026-9898-001'),
-      request: getTestRequest('REQ-2026-9898-001'),
+      invoice: _testInvoice,
+      request: _testRequest,
       example: true
     });
     if (derivedToken.ok && derivedToken.token.token_id === tokenId) {
@@ -87,6 +92,7 @@ export default async function handler(req, res) {
   // In Workers: worker.mjs injects config via req.config
   // In local tests: handler is called directly without worker, so fall back to buildConfigFromEnv()
   const config = req.config || buildConfigFromEnv();
+  const logger = req.logger || getDefaultLogger();
 
   // CORS from config
   const origins = config.allowed_origins ? config.allowed_origins.split(',').map(o => o.trim()) : [];
@@ -150,7 +156,7 @@ export default async function handler(req, res) {
 
   try {
     // Lookup token
-    const lookup = lookupToken(tokenId);
+    const lookup = await lookupToken(tokenId);
     if (!lookup) {
       return sendErrorResponse(res, ERROR_CODES.TOKEN_NOT_FOUND, correlationId);
     }
@@ -221,6 +227,45 @@ export default async function handler(req, res) {
     const storage = config.environment === DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST
       ? createStorageAdapter({ environment: 'TEST', config: { baseDir: join(PAYMENT_DIR, 'private', 'test-runtime') } })
       : createBoundProductionStorageAdapter(config);
+
+    // Idempotent session creation: check for existing session with same identity
+    const existingSession = await storage.getSession(portalSession.session_id);
+    if (existingSession) {
+      // Validate lineage matches — same token, payment request, invoice
+      const sameToken = existingSession.token_id === portalSession.token_id;
+      const sameRequest = existingSession.payment_request_id === portalSession.payment_request_id;
+      const sameInvoice = existingSession.invoice_id === portalSession.invoice_id;
+
+      if (sameToken && sameRequest && sameInvoice) {
+        // Reuse existing valid session
+        logger.logCheckoutCreated({
+          correlationId,
+          sessionId: existingSession.session_id,
+          paymentRequestId: request.request_id,
+          note: 'reused_existing_session',
+        });
+
+        return res.status(200).json({
+          ok: true,
+          checkout_url: existingSession.stripe_checkout_session_url,
+          checkout_session_id: existingSession.stripe_checkout_session_id,
+          portal_session_id: existingSession.session_id,
+          expires_at: existingSession.expires_at,
+          environment: config.environment,
+          stripe_mode: config.stripe_mode,
+          _test_only: config.environment !== DEPLOYMENT_ENVIRONMENTS.PRODUCTION_DISABLED || config.stripe_mode !== 'LIVE',
+        });
+      } else {
+        // Conflicting lineage — fail closed
+        logger.logError({
+          correlationId,
+          error_code: 'SESSION_LINEAGE_CONFLICT',
+          message: 'Existing session has different token/payment_request/invoice lineage',
+          context: 'checkout_create',
+        });
+        return sendErrorResponse(res, ERROR_CODES.CHECKOUT_CREATION_FAILED, correlationId, ['Existing session conflicts with new request']);
+      }
+    }
 
     await storage.createSession(portalSession);
 

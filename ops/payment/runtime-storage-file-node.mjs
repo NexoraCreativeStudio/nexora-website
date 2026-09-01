@@ -155,4 +155,26 @@ export class TestFileStorageAdapter extends PaymentStorageAdapter {
   getAdapterId() {
     return 'TestFileStorageAdapter';
   }
+
+  /* Generic key-value methods for test use */
+  async set(key, value) {
+    const parts = key.split(':');
+    const type = parts[0];
+    const id = parts[1];
+    const dir = join(this.baseDir, type + 's');
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    const path = join(dir, `${id}.json`);
+    this.atomicWrite(path, value);
+    return { ok: true };
+  }
+
+  async get(key) {
+    const parts = key.split(':');
+    const type = parts[0];
+    const id = parts[1];
+    const dir = join(this.baseDir, type + 's');
+    const path = join(dir, `${id}.json`);
+    if (!existsSync(path)) return null;
+    return JSON.parse(readFileSync(path, 'utf8'));
+  }
 }

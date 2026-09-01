@@ -111,12 +111,21 @@ export class NeonWorkersPostgreSQLStorageClient extends SharedStorageClient {
     if (key.startsWith(this.namespace + ':')) {
       return key;
     }
-    return `${this.namespace}:${key}`;
+    const fullKey = `${this.namespace}:${key}`;
+    // DEBUG: log namespace prefixing
+    if (process.env.NEXORA_DEBUG_STORAGE_KEYS === 'true') {
+      console.error('[NeonWorkersClient._key] input_key:', key, 'provider_namespace:', this.namespace, 'final_key:', fullKey);
+    }
+    return fullKey;
   }
 
   /* Get value by key */
   async get(key) {
     const fullKey = this._key(key);
+    // DEBUG
+    if (process.env.NEXORA_DEBUG_STORAGE_KEYS === 'true') {
+      console.error('[NeonWorkersClient.get] provider_namespace:', this.namespace, 'final_key:', fullKey);
+    }
     const result = await this.dbClient.query(
       `SELECT value FROM ${this.tableName} WHERE namespace = $1 AND key = $2`,
       [this.namespace, fullKey]
@@ -127,6 +136,10 @@ export class NeonWorkersPostgreSQLStorageClient extends SharedStorageClient {
   /* Set value by key (overwrites if exists) */
   async set(key, value) {
     const fullKey = this._key(key);
+    // DEBUG
+    if (process.env.NEXORA_DEBUG_STORAGE_KEYS === 'true') {
+      console.error('[NeonWorkersClient.set] provider_namespace:', this.namespace, 'final_key:', fullKey);
+    }
     await this.dbClient.query(
       `INSERT INTO ${this.tableName} (namespace, key, value, created_at, updated_at)
        VALUES ($1, $2, $3, NOW(), NOW())
@@ -151,6 +164,10 @@ export class NeonWorkersPostgreSQLStorageClient extends SharedStorageClient {
   /* Check if key exists */
   async exists(key) {
     const fullKey = this._key(key);
+    // DEBUG: log key divergence
+    if (process.env.NEXORA_DEBUG_STORAGE_KEYS === 'true') {
+      console.error('[NeonWorkersClient.exists] input_key:', key, 'provider_namespace:', this.namespace, 'final_key:', fullKey);
+    }
     const result = await this.dbClient.query(
       `SELECT 1 FROM ${this.tableName} WHERE namespace = $1 AND key = $2 LIMIT 1`,
       [this.namespace, fullKey]
@@ -201,6 +218,10 @@ export class NeonWorkersPostgreSQLStorageClient extends SharedStorageClient {
      Returns { ok: true, created: true } | { ok: true, created: false } | { ok: false, reason } */
   async setIfAbsent(key, value) {
     const fullKey = this._key(key);
+    // DEBUG: log key divergence
+    if (process.env.NEXORA_DEBUG_STORAGE_KEYS === 'true') {
+      console.error('[NeonWorkersClient.setIfAbsent] input_key:', key, 'provider_namespace:', this.namespace, 'final_key:', fullKey);
+    }
 
     try {
       const result = await this.dbClient.query(
@@ -212,6 +233,10 @@ export class NeonWorkersPostgreSQLStorageClient extends SharedStorageClient {
       );
 
       const created = result.rows.length > 0 && result.rows[0].created === true;
+      // DEBUG: log result
+      if (process.env.NEXORA_DEBUG_STORAGE_KEYS === 'true') {
+        console.error('[NeonWorkersClient.setIfAbsent] created:', created, 'provider_namespace:', this.namespace, 'final_key:', fullKey);
+      }
       return { ok: true, created };
     } catch (err) {
       return { ok: false, reason: err.message };

@@ -124,6 +124,9 @@ export class ProductionStorageAdapter extends PaymentStorageAdapter {
     if (!opts.config?.sharedStorageClientType) {
       throw new Error('PRODUCTION storage requires config.sharedStorageClientType (e.g., "redis", "postgresql", "dynamodb")');
     }
+    if (!opts.config?.sharedStorageNamespace) {
+      throw new Error('PRODUCTION storage requires config.sharedStorageNamespace (e.g., "nexora/payment/STAGING_TEST")');
+    }
     // Validate client implements required methods
     const client = opts.config.sharedStorageClient;
     const requiredMethods = ['get', 'set', 'delete', 'exists', 'compareAndSet', 'setIfAbsent'];
@@ -135,37 +138,56 @@ export class ProductionStorageAdapter extends PaymentStorageAdapter {
     super({ environment: 'PRODUCTION', config: opts.config });
     this.client = opts.config.sharedStorageClient;
     this.clientType = opts.config.sharedStorageClientType;
-    this.keyPrefix = opts.config.keyPrefix || 'nexora:payment:';
-    this.envNamespace = opts.config.environmentNamespace || 'production';
+    this.sharedStorageNamespace = opts.config.sharedStorageNamespace;
   }
 
-  /* Key format: nexora:payment:{environment}:{type}:{id} */
+  /* Key format uses sharedStorageNamespace from config (e.g., nexora/payment/STAGING_TEST:session:...) */
   sessionKey(sessionId) {
-    return `${this.keyPrefix}${this.envNamespace}:session:${sessionId}`;
+    return `${this.sharedStorageNamespace}:session:${sessionId}`;
   }
 
   paymentKey(paymentId) {
-    return `${this.keyPrefix}${this.envNamespace}:payment:${paymentId}`;
+    return `${this.sharedStorageNamespace}:payment:${paymentId}`;
   }
 
   idempotencyKey(key) {
-    return `${this.keyPrefix}${this.envNamespace}:idem:${key}`;
+    return `${this.sharedStorageNamespace}:idem:${key}`;
   }
 
   async createSession(session) {
     if (!session || !session.session_id) throw new Error('Session must have session_id');
     const key = this.sessionKey(session.session_id);
+    // DEBUG: log key construction
+    if (process.env.NEXORA_DEBUG_STORAGE_KEYS === 'true') {
+      console.error('[ProductionStorageAdapter.createSession] session_id:', session.session_id, 'adapter_key:', key, 'provider_namespace:', this.sharedStorageNamespace);
+    }
     const created = await this.client.setIfAbsent(key, JSON.stringify(session));
     if (!created.ok || !created.created) {
       throw new Error(`Session ${session.session_id} already exists`);
+    }
+    // Secondary index: checkout_session_id -> session_id
+    if (session.stripe_checkout_session_id) {
+      const idxKey = this.checkoutIndexKey(session.stripe_checkout_session_id);
+      await this.client.set(idxKey, JSON.stringify(session.session_id));
+    }
+    // Secondary index: token_id -> session_id
+    if (session.token_id) {
+      const idxKey = this.tokenIndexKey(session.token_id);
+      await this.client.set(idxKey, JSON.stringify(session.session_id));
     }
     return { ok: true, session };
   }
 
   async getSession(sessionId) {
     const key = this.sessionKey(sessionId);
+    // DEBUG: log key construction
+    if (process.env.NEXORA_DEBUG_STORAGE_KEYS === 'true') {
+      console.error('[ProductionStorageAdapter.getSession] session_id:', sessionId, 'adapter_key:', key, 'provider_namespace:', this.sharedStorageNamespace);
+    }
     const data = await this.client.get(key);
-    return data ? JSON.parse(data) : null;
+    if (!data) return null;
+    // Neon JSONB driver returns already-parsed objects; file adapter returns strings
+    return typeof data === 'string' ? JSON.parse(data) : data;
   }
 
   async updateSession(session) {
@@ -177,9 +199,46 @@ export class ProductionStorageAdapter extends PaymentStorageAdapter {
     return { ok: true, session };
   }
 
+  /* Secondary index helpers */
+  checkoutIndexKey(checkoutSessionId) {
+    return `${this.sharedStorageNamespace}:idx:checkout:${checkoutSessionId}`;
+  }
+
+  requestIndexKey(requestId) {
+    return `${this.sharedStorageNamespace}:idx:request:${requestId}`;
+  }
+
   async findSessionByCheckoutSessionId(checkoutSessionId) {
-    // Requires secondary index — implement based on clientType
-    throw new Error(`findSessionByCheckoutSessionId not implemented for ${this.clientType} — add secondary index`);
+    const idxKey = this.checkoutIndexKey(checkoutSessionId);
+    const sessionId = await this.client.get(idxKey);
+    if (!sessionId) return null;
+    // Neon JSONB driver auto-parses JSON strings (returns plain string);
+    // file adapter returns raw JSON string (with quotes).
+    // Handle both: try parse, fallback to raw if already a plain string.
+    let parsed = sessionId;
+    if (typeof sessionId === 'string' && sessionId.startsWith('"')) {
+      try { parsed = JSON.parse(sessionId); } catch { parsed = sessionId; }
+    }
+    return this.getSession(parsed);
+  }
+
+  /* Secondary index: token_id -> session_id */
+  tokenIndexKey(tokenId) {
+    return `${this.sharedStorageNamespace}:idx:token:${tokenId}`;
+  }
+
+  async getSessionByTokenId(tokenId) {
+    const idxKey = this.tokenIndexKey(tokenId);
+    const sessionId = await this.client.get(idxKey);
+    if (!sessionId) return null;
+    // Neon JSONB driver auto-parses JSON strings (returns plain string);
+    // file adapter returns raw JSON string (with quotes).
+    // Handle both: try parse, fallback to raw if already a plain string.
+    let parsed = sessionId;
+    if (typeof sessionId === 'string' && sessionId.startsWith('"')) {
+      try { parsed = JSON.parse(sessionId); } catch { parsed = sessionId; }
+    }
+    return this.getSession(parsed);
   }
 
   async createPayment(payment) {
@@ -189,13 +248,19 @@ export class ProductionStorageAdapter extends PaymentStorageAdapter {
     if (!created.ok || !created.created) {
       throw new Error(`Payment ${payment.payment_id} already exists`);
     }
+    // Secondary index: payment_request_id -> payment_id
+    if (payment.payment_request_id) {
+      const idxKey = this.requestIndexKey(payment.payment_request_id);
+      await this.client.set(idxKey, JSON.stringify(payment.payment_id));
+    }
     return { ok: true, payment };
   }
 
   async getPayment(paymentId) {
     const key = this.paymentKey(paymentId);
     const data = await this.client.get(key);
-    return data ? JSON.parse(data) : null;
+    if (!data) return null;
+    return typeof data === 'string' ? JSON.parse(data) : data;
   }
 
   async updatePayment(payment) {
@@ -208,13 +273,25 @@ export class ProductionStorageAdapter extends PaymentStorageAdapter {
   }
 
   async findPaymentByRequestId(requestId) {
-    throw new Error(`findPaymentByRequestId not implemented for ${this.clientType} — add secondary index`);
+    const idxKey = this.requestIndexKey(requestId);
+    const paymentId = await this.client.get(idxKey);
+    if (!paymentId) return null;
+    // Neon JSONB driver auto-parses JSON strings (returns plain string);
+    // file adapter returns raw JSON string (with quotes).
+    // Handle both: try parse, fallback to raw if already a plain string.
+    let parsed = paymentId;
+    if (typeof paymentId === 'string' && paymentId.startsWith('"')) {
+      try { parsed = JSON.parse(paymentId); } catch { parsed = paymentId; }
+    }
+    return this.getPayment(parsed);
   }
 
   async checkIdempotency(idempotencyKey) {
     const key = this.idempotencyKey(idempotencyKey);
     const data = await this.client.get(key);
-    return data ? { exists: true, eventId: JSON.parse(data).event_id } : { exists: false };
+    if (!data) return { exists: false };
+    const record = typeof data === 'string' ? JSON.parse(data) : data;
+    return { exists: true, eventId: record.event_id };
   }
 
   async setIdempotency(idempotencyKey, eventId) {
@@ -238,7 +315,28 @@ export class ProductionStorageAdapter extends PaymentStorageAdapter {
     }
     // Key already existed - check what's there
     const existing = await this.client.get(key);
-    return { ok: true, claimed: false, eventId: existing ? JSON.parse(existing).event_id : null };
+    if (!existing) return { ok: true, claimed: false, eventId: null };
+    const record = typeof existing === 'string' ? JSON.parse(existing) : existing;
+    return { ok: true, claimed: false, eventId: record ? record.event_id : null };
+  }
+
+  /* Generic get/set/delete for arbitrary keys (delegates to underlying client) */
+  async get(key) {
+    const data = await this.client.get(key);
+    if (!data) return null;
+    return typeof data === 'string' ? JSON.parse(data) : data;
+  }
+
+  async set(key, value) {
+    return await this.client.set(key, value);
+  }
+
+  async delete(key) {
+    return await this.client.delete(key);
+  }
+
+  async exists(key) {
+    return await this.client.exists(key);
   }
 }
 
@@ -325,11 +423,17 @@ export function validateStorageAdapter(adapter, environment) {
   if (!requiredMethods.every(m => typeof adapter[m] === 'function')) {
     return { ok: false, reason: 'adapter missing required methods' };
   }
+  // ProductionStorageAdapter is a wrapper - validate the underlying client type
+  if (adapter.getAdapterId() === 'ProductionStorageAdapter' && adapter.client) {
+    const clientType = adapter.client.getClientType();
+    if (environment === 'PRODUCTION' && clientType === 'MemoryTestSharedStorageClient') {
+      return { ok: false, reason: 'MemoryTestSharedStorageClient must not be used in PRODUCTION' };
+    }
+    // ProductionStorageAdapter wrapping MemoryTestSharedStorageClient is OK for TEST
+    return { ok: true };
+  }
   if (environment === 'PRODUCTION' && adapter.getAdapterId() === 'TestFileStorageAdapter') {
     return { ok: false, reason: 'TestFileStorageAdapter must not be used in PRODUCTION' };
-  }
-  if (environment === 'TEST' && adapter.getAdapterId() === 'ProductionStorageAdapter') {
-    return { ok: false, reason: 'ProductionStorageAdapter requires PRODUCTION environment' };
   }
   return { ok: true };
 }

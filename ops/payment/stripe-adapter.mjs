@@ -112,7 +112,7 @@ export class StripeAdapter {
 
     // TEST-MODE: return deterministic synthetic representation
     if (this.environment !== 'PRODUCTION') {
-      return {
+      const syntheticSession = {
         object: 'checkout.session',
         id: `cs_test_${sha256hex(`nexora-checkout:${paymentRequest.request_id}:${amountMinor}`).slice(0, 24)}`,
         payment_status: 'unpaid',
@@ -127,6 +127,10 @@ export class StripeAdapter {
         _test_only: true,
         note: 'SYNTHETIC TEST-MODE REPRESENTATION — NOT A REAL STRIPE OBJECT',
       };
+      // Add url property to match real Stripe Checkout Session structure
+      // In TEST mode, return a fake checkout URL (NOT the success URL)
+      syntheticSession.url = `https://checkout.stripe.test/pay/${syntheticSession.id}#fidkdgw`;
+      return syntheticSession;
     }
 
     // PRODUCTION PATH — requires server-side Stripe SDK (lazy loaded)

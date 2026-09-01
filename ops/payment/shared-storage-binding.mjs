@@ -62,9 +62,8 @@ export function registerProvider(identifier, factory) {
 import { NeonPostgreSQLStorageClient } from './neon-postgresql-storage.mjs';
 
 function neonProviderFactory(config) {
-  // During registration test, config is empty object - return a minimal mock
-  if (!config || Object.keys(config).length === 0 || !config._testQueryClient) {
-    // Return a mock client with required methods for validation
+  // During registration test (empty config), return mock for validation
+  if (!config || Object.keys(config).length === 0) {
     return {
       get: async () => null,
       set: async () => ({ ok: true }),
@@ -74,6 +73,11 @@ function neonProviderFactory(config) {
       setIfAbsent: async () => ({ ok: true, created: false }),
       listByPrefix: async () => [],
     };
+  }
+  // Throw instead of silent mock fallback for STAGING_TEST/PRODUCTION
+  if (!config._testQueryClient && config.environment !== DEPLOYMENT_ENVIRONMENTS.LOCAL_TEST) {
+    throw new Error(`Provider '${config.shared_storage_provider}' requires _testQueryClient for ${config.environment}. ` +
+      `Set SHARED_STORAGE_PROVIDER=neon-workers and ensure NEON_DATABASE_URL is configured.`);
   }
   return new NeonPostgreSQLStorageClient({
     dbClient: config._testQueryClient,
@@ -109,9 +113,8 @@ export async function registerNeonWorkersProvider() {
   await _loadNeonWorkersBinding();
 
   function neonWorkersProviderFactory(config) {
-    // During registration test, config is empty object - return a minimal mock for validation
-    if (!config || Object.keys(config).length === 0 || !config._testQueryClient) {
-      // Return a mock client with required methods for validation
+    // During registration test (empty config), return mock for validation
+    if (!config || Object.keys(config).length === 0) {
       return {
         get: async () => null,
         set: async () => ({ ok: true }),
@@ -123,19 +126,37 @@ export async function registerNeonWorkersProvider() {
       };
     }
 
-    // Create Neon Workers client synchronously (matching neonProviderFactory pattern)
-    const neonClient = new _NeonWorkersClient({
-      connectionString: config.neon_database_url || process.env.NEON_DATABASE_URL,
-      mockQueryClient: config._testQueryClient,
-    });
+    // Test harness with _testQueryClient - use mock (PRIORITY)
+    if (config._testQueryClient) {
+      const neonClient = new _NeonWorkersClient({
+        mockQueryClient: config._testQueryClient,
+      });
+      return new _NeonWorkersPostgreSQLStorageClient({
+        dbClient: neonClient,
+        namespace: config.shared_storage_namespace || 'nexora:payment:STAGING_TEST',
+        config: {
+          tableName: config.neon_table_name || 'nexora_kv_store',
+        },
+      });
+    }
 
-    return new _NeonWorkersPostgreSQLStorageClient({
-      dbClient: neonClient,
-      namespace: config.shared_storage_namespace || 'nexora:payment:STAGING_TEST',
-      config: {
-        tableName: config.neon_table_name || 'nexora_kv_store',
-      },
-    });
+    // Real environment with Neon database URL - construct real client
+    if (config.neon_database_url) {
+      const neonClient = new _NeonWorkersClient({
+        connectionString: config.neon_database_url,
+      });
+
+      return new _NeonWorkersPostgreSQLStorageClient({
+        dbClient: neonClient,
+        namespace: config.shared_storage_namespace || 'nexora:payment:STAGING_TEST',
+        config: {
+          tableName: config.neon_table_name || 'nexora_kv_store',
+        },
+      });
+    }
+
+    // Fail if neither real URL nor mock provided
+    throw new Error(`Provider '${config.shared_storage_provider}' requires either NEON_DATABASE_URL or _testQueryClient for ${config.environment}.`);
   }
 
   registerProvider('postgresql-workers', neonWorkersProviderFactory);
@@ -303,8 +324,7 @@ export function createBoundProductionStorageAdapter(config) {
     config: {
       sharedStorageClient: client,
       sharedStorageClientType: config.shared_storage_provider,
-      keyPrefix: 'nexora:payment:',
-      environmentNamespace: config.environment,
+      sharedStorageNamespace: config.shared_storage_namespace,
     },
   });
 

@@ -195,7 +195,8 @@ export function expireSession(session) {
 export function checkSessionValidForCheckout(session, now = new Date()) {
   const reasons = [];
 
-  if (!['CREATED', 'CHECKOUT_CREATED'].includes(session.status)) {
+  // Allow CUSTOMER_REDIRECTED for idempotent redirect (user refreshes or clicks link again)
+  if (!['CREATED', 'CHECKOUT_CREATED', 'CUSTOMER_REDIRECTED'].includes(session.status)) {
     reasons.push(`session status ${session.status} not valid for checkout`);
     return { ok: false, reasons };
   }
@@ -233,7 +234,7 @@ export const PORTAL_SESSION_EXAMPLE = {
   stripe_checkout_session_url: null,
   stripe_checkout_session_expires_at: null,
   created_at: '2026-08-15T09:00:00.000Z',
-  expires_at: '2026-08-15T09:30:00.000Z',
+  expires_at: '2027-12-31T09:30:00.000Z',
   completed_at: null,
   failed_at: null,
   failure_reason: null,

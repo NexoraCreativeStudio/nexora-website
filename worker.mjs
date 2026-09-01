@@ -7,10 +7,16 @@
 
 import { buildConfigFromEnv, buildReadinessConfigFromEnv, DEPLOYMENT_ENVIRONMENTS } from './ops/payment/deployment-config.mjs';
 import { createWebhookVerifier } from './ops/payment/webhook-verifier.mjs';
-import { parseRawBody, rawBodyToString, handlePreflight, ERROR_CODES } from './api/payment/request-limits.mjs';
+import { parseRawBody, rawBodyToString, handlePreflight, parseJsonBody, ERROR_CODES } from './api/payment/request-limits.mjs';
 import { sendErrorResponse } from './api/payment/error-contract.mjs';
 import { generateCorrelationId } from './ops/payment/structured-logging.mjs';
 import { SafeLogger } from './ops/payment/structured-logging.mjs';
+import { registerNeonWorkersProvider } from './ops/payment/shared-storage-binding.mjs';
+
+/* Register neon-workers provider at Worker startup (once per isolate) */
+registerNeonWorkersProvider().catch(err => {
+  console.error('[Worker startup] Failed to register neon-workers provider:', err.message);
+});
 
 /* Route map - exact path matching only */
 const ROUTES = [
@@ -19,6 +25,8 @@ const ROUTES = [
   { path: '/api/payment/checkout-create', handler: 'checkout-create', allowedMethods: ['POST', 'OPTIONS'], requiresFullConfig: true },
   { path: '/api/payment/status', handler: 'status', allowedMethods: ['GET', 'OPTIONS'], requiresFullConfig: true },
   { path: '/api/payment/webhook', handler: 'webhook', allowedMethods: ['POST', 'OPTIONS'], requiresFullConfig: true },
+  { path: '/payment/success', handler: 'payment-success', allowedMethods: ['GET', 'OPTIONS'], requiresFullConfig: true },
+  { path: '/payment/cancel', handler: 'payment-cancel', allowedMethods: ['GET', 'OPTIONS'], requiresFullConfig: true },
 ];
 
 /* Lazy handler cache */
@@ -33,8 +41,23 @@ function createLogger(env, correlationId) {
   });
 }
 
-/* Match route - exact path only */
+/* Match route - exact path for API routes, dynamic segment for /pay/:token */
 function matchRoute(path) {
+  // Special case: /pay/:patTokenId (GET only) — extract token as param
+  if (path.startsWith('/pay/')) {
+    const tokenId = path.slice(5); // after '/pay/'
+    if (tokenId && /^PAT-[A-Za-z0-9_-]{43}$/.test(tokenId)) {
+      return {
+        path: '/pay/:patTokenId',
+        handler: 'pay-redirect',
+        allowedMethods: ['GET'],
+        requiresFullConfig: true,
+        params: { patTokenId: tokenId }
+      };
+    }
+  }
+
+  // Existing exact-match logic for all other routes — UNCHANGED
   for (const route of ROUTES) {
     if (route.path === path) return route;
   }
@@ -78,6 +101,30 @@ class WorkersResponseAdapter {
       if (typeof data === 'string') this.body = data;
       else this.body = JSON.stringify(data);
     }
+    this._ended = true;
+    return this;
+  }
+
+  /* Express-compatible send() — sets body and ends response */
+  send(data) {
+    if (data !== undefined) {
+      if (typeof data === 'string') this.body = data;
+      else this.body = JSON.stringify(data);
+    }
+    this._ended = true;
+    return this;
+  }
+
+  /* Express-compatible redirect() — sets Location header and status */
+  redirect(statusOrUrl, url) {
+    let status = 302;
+    let location = statusOrUrl;
+    if (typeof statusOrUrl === 'number') {
+      status = statusOrUrl;
+      location = url;
+    }
+    this.statusCode = status;
+    this.headers.set('Location', location);
     this._ended = true;
     return this;
   }
@@ -140,6 +187,9 @@ const HANDLER_LOADERS = {
   'checkout-create': () => import('./api/payment/checkout-create.mjs'),
   status: () => import('./api/payment/status.mjs'),
   webhook: () => import('./api/payment/webhook.mjs'),
+  'pay-redirect': () => import('./api/payment/pay-redirect.mjs'),
+  'payment-success': () => import('./api/payment/payment-success.mjs'),
+  'payment-cancel': () => import('./api/payment/payment-cancel.mjs'),
 };
 
 /* Lazy load single handler by name — validates handlerName, preserves cache, invokes loader */
@@ -269,9 +319,16 @@ export default {
     if (route.requiresFullConfig) {
       // Full strict config for routes that need secrets/validation
       config = buildConfigFromEnv(env);
+      // Pass through test query client for Neon provider (testing only)
+      if (env._testQueryClient) {
+        config._testQueryClient = env._testQueryClient;
+      }
     } else if (route.requiresObservationalConfig) {
       // Observational config for readiness - never throws, reports missing bindings
       config = buildReadinessConfigFromEnv(env);
+      if (env._testQueryClient) {
+        config._testQueryClient = env._testQueryClient;
+      }
     } else {
       // For routes like /health that don't need full config, merge lightweight with minimal defaults
       config = {
@@ -306,7 +363,7 @@ export default {
 
     // 10. Create request/response adapters (with request-scoped logger and correlationId)
     const reqAdapter = createRequestAdapter(request, env, logger, correlationId);
-    reqAdapter.params = {}; // exact matching, no params
+    reqAdapter.params = route.params || {}; // use dynamic params from matchRoute (e.g., patTokenId)
     reqAdapter.config = config; // Pass config so handlers don't re-read env
 
     const resAdapter = new WorkersResponseAdapter();
@@ -334,6 +391,15 @@ export default {
           break;
         }
         case 'checkout-create': {
+          // Parse JSON body for checkout-create
+          let body;
+          try {
+            body = await parseJsonBody(request, config.max_json_body_size);
+          } catch (err) {
+            sendErrorResponse(resAdapter, err.code, correlationId);
+            return resAdapter.toResponse();
+          }
+          reqAdapter.body = body;
           const handler = await loadHandler('checkout-create');
           await handler(reqAdapter, resAdapter);
           break;
@@ -345,6 +411,21 @@ export default {
         }
         case 'webhook': {
           await handleWebhook(request, env, config, correlationId, logger, resAdapter);
+          break;
+        }
+        case 'pay-redirect': {
+          const handler = await loadHandler('pay-redirect');
+          await handler(reqAdapter, resAdapter);
+          break;
+        }
+        case 'payment-success': {
+          const handler = await loadHandler('payment-success');
+          await handler(reqAdapter, resAdapter);
+          break;
+        }
+        case 'payment-cancel': {
+          const handler = await loadHandler('payment-cancel');
+          await handler(reqAdapter, resAdapter);
           break;
         }
         default:

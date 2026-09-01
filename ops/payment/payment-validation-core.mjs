@@ -4,7 +4,7 @@
    Imports governed currency + invoice id regex from ./currency-bridge.mjs (build-time JSON import).
    Imports pure scanners / sha256hex from ../shared/scanners.mjs. */
 
-import { SOURCE_CURRENCY, INVOICE_ID_RE } from './currency-bridge.mjs';
+import { INVOICE_ID_RE, getSourceCurrency } from './currency-bridge.mjs';
 import { sha256hex, scanSecrets, scanBankDetails, scanPaymentLink, scanLegacy, scanVatAssertions, scanFinancialClaims, collectStrings } from '../shared/scanners.mjs';
 
 /* Re-export Worker-safe scanners for Worker runtime consumers (e.g., stripe-adapter.mjs, payment-validation.mjs) */
@@ -128,14 +128,15 @@ export function paymentIdFor(invoiceId, ordinal) {
 /* ------------------------------------------------------------------ */
 /* Payment Request validation (Worker runtime subset)                 */
 /* ------------------------------------------------------------------ */
-export function validatePaymentRequest(req, opts = {}) {
+export async function validatePaymentRequest(req, opts = {}) {
   const reasons = [];
   if (!req || typeof req !== 'object') return { failures: ['payment request must be an object'], checks: [] };
   if (opts.requireExampleMarker !== false && req._example !== true) reasons.push('_example: fixture must be marked "_example": true — real payment requests belong in ops/payment/private/ (gitignored), never committed');
   if (req.schema !== PAYMENT_REQUEST_SCHEMA) reasons.push(`schema must be ${PAYMENT_REQUEST_SCHEMA}`);
   if (typeof req.request_id !== 'string' || !/^REQ-\d{4}-\d{4}-\d{3}$/.test(req.request_id)) reasons.push('request_id must match /^REQ-YYYY-NNNN-NNN$/');
   if (typeof req.invoice_id !== 'string' || !INVOICE_ID_RE.test(req.invoice_id)) reasons.push('invoice_id required (INV-YYYY-NNNN-NNN)');
-  if (req.currency !== SOURCE_CURRENCY) reasons.push(`currency must be ${SOURCE_CURRENCY}`);
+  const sourceCurrency = await getSourceCurrency();
+  if (req.currency !== sourceCurrency) reasons.push(`currency must be ${sourceCurrency}`);
   if (typeof req.amount_expected !== 'number' || req.amount_expected <= 0) reasons.push('amount_expected must be a positive number');
   if (req.amount_requested !== req.amount_expected) reasons.push('amount_requested must equal amount_expected (a request may not override the invoice)');
   if (!PAYMENT_ENVIRONMENTS.includes(req.environment)) reasons.push('environment must be a governed value');
@@ -296,9 +297,9 @@ export class TestPaymentAdapter extends PaymentProviderAdapter {
 /* ------------------------------------------------------------------ */
 /* Payment record model                                              */
 /* ------------------------------------------------------------------ */
-export function buildPaymentRecord(request, opts = {}) {
+export async function buildPaymentRecord(request, opts = {}) {
   const reasons = [];
-  const req = validatePaymentRequest(request, { requireExampleMarker: opts.example === true });
+  const req = await validatePaymentRequest(request, { requireExampleMarker: opts.example === true });
   if (req.failures.length) return { ok: false, reasons: req.failures };
 
   const createdAt = opts.createdAt || request.created_at || '1970-01-01T00:00:00.000Z';
@@ -493,14 +494,15 @@ export function buildReconciliation({ invoice, request, evidence, adapterOutcome
 /* ------------------------------------------------------------------ */
 /* Validation of payment record                                       */
 /* ------------------------------------------------------------------ */
-export function validatePaymentRecord(record, opts = {}) {
+export async function validatePaymentRecord(record, opts = {}) {
   const reasons = [];
   if (!record || typeof record !== 'object') return { failures: ['payment record must be an object'], checks: [] };
   if (opts.requireExampleMarker !== false && record._example !== true) reasons.push('_example: fixture must be marked "_example": true — real payment records belong in ops/payment/private/ (gitignored), never committed');
   if (record.schema !== PAYMENT_SCHEMA) reasons.push(`schema must be ${PAYMENT_SCHEMA}`);
   if (typeof record.payment_id !== 'string' || !/^PAY-\d{4}-\d{4}-\d{3}$/.test(record.payment_id)) reasons.push('payment_id must match /^PAY-YYYY-NNNN-NNN$/');
   if (typeof record.invoice_id !== 'string' || !INVOICE_ID_RE.test(record.invoice_id)) reasons.push('invoice_id required (INV-YYYY-NNNN-NNN)');
-  if (record.currency !== SOURCE_CURRENCY) reasons.push(`currency must be ${SOURCE_CURRENCY}`);
+  const sourceCurrency = await getSourceCurrency();
+  if (record.currency !== sourceCurrency) reasons.push(`currency must be ${sourceCurrency}`);
   if (!PAYMENT_STATUSES.includes(record.status)) reasons.push(`status must be one of ${PAYMENT_STATUSES.join(', ')}`);
   if (record.amount_expected == null || record.amount_expected <= 0) reasons.push('amount_expected must be positive');
   if (typeof record.amount_received !== 'number') reasons.push('amount_received must be a number');

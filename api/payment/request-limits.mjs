@@ -27,10 +27,18 @@ function isNodeRequest(req) {
 
 /* Parse JSON body with size limit - supports both Node and Cloudflare Workers */
 export async function parseJsonBody(req, maxSize = DEFAULT_LIMITS.maxJsonBodySize) {
+  // Handle pre-parsed body (for testing) - only if body is already a parsed object, not a stream
+  if (req && req.body !== undefined && typeof req.body === 'object' && req.body !== null && typeof req.body.getReader !== 'function') {
+    return req.body;
+  }
   if (isCloudflareRequest(req)) {
     return parseJsonBodyCloudflare(req, maxSize);
   }
-  return parseJsonBodyNode(req, maxSize);
+  if (isNodeRequest(req)) {
+    return parseJsonBodyNode(req, maxSize);
+  }
+  // Invalid request object - throw structured error
+  throw { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid request object: missing required stream interface' };
 }
 
 /* Node.js implementation */

@@ -31,10 +31,12 @@ import {
   PAYMENT_STATUSES, PAYMENT_ENVIRONMENTS, PROVIDER_IDS,
   buildPaymentRequest, buildPaymentRecord, applyPaymentEvent, applyReconciliation,
   buildReconciliation,
-  TestPaymentAdapter, PaymentProviderAdapter,
+  TestPaymentAdapter,
   sha256hex, buildWebhookFingerprint, verifyWebhookFingerprint,
   validatePaymentRecord, validateWebhookEvent
 } from './payment-validation.mjs';
+
+import { PaymentProviderAdapter } from './payment-validation-core.mjs';
 
 import {
   INVOICE_SCHEMA, INVOICE_STATUSES, INVOICE_TYPES,
@@ -592,7 +594,7 @@ runTest('INTEGRATION: Complete flow uses storage adapter (no handler-local Map)'
   await storage.updateSession(webhookReceived.session);
 
   // 10. Create payment record
-  const paymentBuild = buildPaymentRecord(exampleRequest, { example: true, createdAt: '2026-08-15T09:00:00.000Z' });
+  const paymentBuild = await buildPaymentRecord(exampleRequest, { example: true, createdAt: '2026-08-15T09:00:00.000Z' });
   assert(paymentBuild.ok, 'Payment record built');
   await storage.createPayment(paymentBuild.payment);
 

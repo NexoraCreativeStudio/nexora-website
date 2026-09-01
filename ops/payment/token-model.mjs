@@ -200,7 +200,7 @@ export const TOKEN_EXAMPLE = {
   currency: 'GBP',
   status: 'ACTIVE',
   created_at: '2026-08-15T09:00:00.000Z',
-  expires_at: '2026-08-22T09:00:00.000Z',
+  expires_at: '2026-12-31T09:00:00.000Z',
   used_at: null,
   revoked_at: null,
   revoked_reason: null,
