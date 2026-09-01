@@ -25,6 +25,7 @@ const root = path.join(__dirname, '..', '..');
 
 const TEMPLATE_PATH = path.join(proposalsDir, 'template', 'proposal-template.html');
 const CSS_PATH = path.join(proposalsDir, 'template', 'proposal.css');
+const LOGO_PATH = path.join(proposalsDir, 'template', 'assets', 'nexora-logo.png');
 
 /* ---- money / label formatting ---- */
 
@@ -202,7 +203,7 @@ export function renderTemplate(tpl, ctx) {
   return renderNode(parse(tokenize(tpl)), ctx);
 }
 
-/* ---- full proposal render (inlines CSS for a self-contained preview) ---- */
+/* ---- full proposal render (inlines CSS + logo for self-contained preview) ---- */
 
 export function renderProposal(proposalData) {
   const tpl = fs.readFileSync(TEMPLATE_PATH, 'utf8');
@@ -210,6 +211,16 @@ export function renderProposal(proposalData) {
   const vm = buildViewModel(proposalData);
   let html = renderTemplate(tpl, vm);
   html = html.replace('<link rel="stylesheet" href="proposal.css">', '<style>\n' + css + '\n</style>');
+
+  /* Embed logo as base64 data URI (self-contained) */
+  if (fs.existsSync(LOGO_PATH)) {
+    const buf = fs.readFileSync(LOGO_PATH);
+    const ext = path.extname(LOGO_PATH).slice(1).toLowerCase();
+    const mime = ext === 'png' ? 'image/png' : `image/${ext}`;
+    const dataUri = `data:${mime};base64,${buf.toString('base64')}`;
+    html = html.replace(/src="assets\/nexora-logo\.png"/, `src="${dataUri}"`);
+  }
+
   return html;
 }
 

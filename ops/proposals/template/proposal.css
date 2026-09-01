@@ -42,20 +42,37 @@ body {
   padding: 56px 48px 48px;
   min-height: 297mm;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
 }
 .cover-inner { width: 100%; max-width: 820px; }
+/* Logo + wordmark group in cover */
+.cover-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 96px;
+}
+.cover-logo {
+  height: 60px;
+  width: auto;
+  flex-shrink: 0;
+}
 .wordmark {
   font-family: var(--serif);
   font-size: 15px;
   letter-spacing: 0.12em;
   color: var(--dark-ink);
-  margin-bottom: 96px;
+  margin-bottom: 0;
   display: flex;
   align-items: baseline;
   gap: 12px;
 }
 .wordmark-sub { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; color: var(--dark-muted); text-transform: uppercase; }
+
+/* Responsive logo sizing */
+@media (max-width: 640px) {
+  .cover-logo { height: 48px; }
+}
 .kicker {
   font-family: var(--mono);
   font-size: 11px;
@@ -313,11 +330,22 @@ table.doc-table td { font-family: var(--mono); color: var(--ink); }
 }
 
 /* ---------- PRINT ---------- */
-@page { size: A4; margin: 0; }
+@page {
+  size: A4;
+  margin: 14mm 34mm;
+}
+@page cover {
+  margin: 0;
+}
+.cover {
+  page: cover;
+  min-height: 297mm;
+  page-break-after: always;
+  padding: 40px 34px;
+}
 @media print {
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body { font-size: 12.5px; }
-  .cover { min-height: 297mm; page-break-after: always; padding: 40px 34px; }
   .doc { padding: 0 34px; }
   .section { margin-bottom: 30px; page-break-inside: auto; }
   .break { page-break-before: always; }

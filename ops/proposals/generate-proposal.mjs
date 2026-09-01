@@ -109,6 +109,19 @@ export function classifyInput(filePath) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Logo embedding — self-contained HTML needs base64 data URIs.       */
+/* ------------------------------------------------------------------ */
+const LOGO_PATH = path.join(proposalsDir, 'template', 'assets', 'nexora-logo.png');
+
+function getLogoDataUri() {
+  if (!fs.existsSync(LOGO_PATH)) return null;
+  const buf = fs.readFileSync(LOGO_PATH);
+  const ext = path.extname(LOGO_PATH).slice(1).toLowerCase();
+  const mime = ext === 'png' ? 'image/png' : `image/${ext}`;
+  return `data:${mime};base64,${buf.toString('base64')}`;
+}
+
+/* ------------------------------------------------------------------ */
 /* Rendering (Step 17) — self-contained HTML with audit metadata.     */
 /* ------------------------------------------------------------------ */
 export function renderProposalDocument(data, opts = {}) {
@@ -123,7 +136,15 @@ export function renderProposalDocument(data, opts = {}) {
   }
 
   let html = renderTemplate(tpl, vm);
+
+  /* Inline CSS (self-contained) */
   html = html.replace('<link rel="stylesheet" href="proposal.css">', '<style>\n' + css + '\n</style>');
+
+  /* Embed logo as base64 data URI (self-contained) */
+  const logoDataUri = getLogoDataUri();
+  if (logoDataUri) {
+    html = html.replace(/src="assets\/nexora-logo\.png"/, `src="${logoDataUri}"`);
+  }
 
   const audit = [
     '<!--',
