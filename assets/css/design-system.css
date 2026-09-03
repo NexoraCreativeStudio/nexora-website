@@ -12,10 +12,15 @@
 /* ===== SPACING SCALE (tokens, additive) ===== */
 :root{
   --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
-  --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px;
-  --space-9:96px; --space-10:140px;
+  --space-5:20px; --space-6:26px; --space-7:38px; --space-8:52px;
+  --space-9:78px; --space-10:112px;
   --radius-sm:10px; --radius-md:16px; --radius-lg:20px; --radius-pill:100px;
 }
+
+/* ===== SCOPED OVERRIDES — reduce shared spacing on Phase 3 pages only ===== */
+.section-head { margin-bottom: var(--space-8); }
+.section-head p { margin-top: var(--space-3); }
+.eyebrow { margin-bottom: var(--space-4); }
 
 /* ===== MOTION SCALE (luxury, restrained — no bounce, no elastic) ===== */
 :root{
