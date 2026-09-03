@@ -110,8 +110,13 @@ export class StripeAdapter {
     const metadata = buildStripeMetadata(paymentRequest);
     const idempotencyKey = deriveIdempotencyKey(paymentRequest.request_id, 'checkout');
 
-    // TEST-MODE: return deterministic synthetic representation
-    if (this.environment !== 'PRODUCTION') {
+    // TEST-MODE: return deterministic synthetic representation (DEFAULT)
+    // Real Stripe SDK in TEST/SANDBOX only when explicitly enabled via config
+    // AND secretKey is a test key (sk_test_...)
+    const useRealStripeSdk = this.config?.useRealStripeSdk === true &&
+                             this.config?.secretKey?.startsWith('sk_test_');
+
+    if (this.environment !== 'PRODUCTION' && !useRealStripeSdk) {
       const syntheticSession = {
         object: 'checkout.session',
         id: `cs_test_${sha256hex(`nexora-checkout:${paymentRequest.request_id}:${amountMinor}`).slice(0, 24)}`,
@@ -133,7 +138,7 @@ export class StripeAdapter {
       return syntheticSession;
     }
 
-    // PRODUCTION PATH — requires server-side Stripe SDK (lazy loaded)
+    // REAL STRIPE SDK PATH — works for PRODUCTION (sk_live_) OR TEST_REAL (sk_test_)
     try {
       const stripe = await getStripeSdk();
       const stripeClient = stripe(this.config?.secretKey);
