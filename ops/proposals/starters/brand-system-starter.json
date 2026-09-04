@@ -1,0 +1,98 @@
+{
+  "proposal_id": "PRP-YYYY-XXXX",
+  "version": "1.0",
+  "status": "DRAFT",
+  "issue_date": "YYYY-MM-DD",
+  "valid_until": "YYYY-MM-DD",
+  "client": {
+    "name": "",
+    "company": "",
+    "contact": {
+      "name": "",
+      "email": "",
+      "phone": ""
+    }
+  },
+  "project": {
+    "title": "[Company] — Brand System Build",
+    "summary": "Comprehensive brand system including identity, guidelines, collateral templates, and digital asset library for consistent brand application.",
+    "objectives": [
+      "Complete brand identity system with logo, palette, typography, imagery",
+      "Comprehensive brand guidelines for internal and external use",
+      "Collateral templates (stationery, social, presentations)",
+      "Digital asset library for consistent brand application"
+    ]
+  },
+  "offering": {
+    "code": "C2",
+    "category": "BRAND",
+    "name": "Brand System"
+  },
+  "scope": {
+    "included": [
+      "Brand strategy workshop (positioning, voice, audience)",
+      "Full logo system (primary, secondary, icon, variations)",
+      "Extended color palette (primary, secondary, functional)",
+      "Typography system (headings, body, UI, web-safe fallbacks)",
+      "Imagery/illustration direction and style",
+      "Comprehensive brand guidelines document",
+      "Collateral templates: stationery, social media, presentations, email signatures",
+      "Digital asset library (Figma/shared folder with organized assets)"
+    ],
+    "deliverables": [
+      "Complete logo system files (all formats)",
+      "Full brand guidelines document (PDF + editable)",
+      "Collateral template files",
+      "Digital asset library access"
+    ],
+    "exclusions": [
+      "Website build",
+      "Print production and vendor management",
+      "Ongoing brand maintenance (Brand Care is separate and optional)",
+      "Custom photography/illustration production"
+    ]
+  },
+  "timeline": {
+    "estimated_delivery": "6 weeks from approval",
+    "notes": "Estimated; final schedule confirmed at agreement"
+  },
+  "commercial_schedule": {
+    "currency": "GBP",
+    "reference_price": 5250,
+    "approved_final_project_price": 5250,
+    "setup_fee": null,
+    "payment_schedule": [40, 30, 30],
+    "recurring_fees": null,
+    "care": null,
+    "warranty": {
+      "code": "W90",
+      "label": "90-day Brand Warranty",
+      "applies": true
+    },
+    "vat": {
+      "status": "UNDETERMINED",
+      "note": "VAT status is unresolved; no tax determination is made in this proposal."
+    }
+  },
+  "client_responsibilities": [
+    "Timely feedback on concepts, design, and guidelines review stages",
+    "Brand strategy inputs before design phase",
+    "Approval of collateral content before template finalisation"
+  ],
+  "assumptions": [
+    "Approved Final Project Price is the contractual commercial basis, not the public From price",
+    "No third-party costs (fonts, stock images, photography) are included without prior approval",
+    "Asset library is delivered via shared cloud folder; client manages access"
+  ],
+  "next_steps": [
+    "Review and confirm this proposal",
+    "Following acceptance, a commercial agreement is executed before invoicing"
+  ],
+  "acceptance": {
+    "method": "written",
+    "provider": null,
+    "status": "PENDING",
+    "accepted_by": null,
+    "accepted_at": null
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "proposal_id": "PRP-YYYY-XXXX",
+  "version": "1.0",
+  "status": "DRAFT",
+  "issue_date": "YYYY-MM-DD",
+  "valid_until": "YYYY-MM-DD",
+  "client": {
+    "name": "",
+    "company": "",
+    "contact": {
+      "name": "",
+      "email": "",
+      "phone": ""
+    }
+  },
+  "project": {
+    "title": "[Company] — Signature Brand Build",
+    "summary": "Bespoke signature brand programme including deep strategy, custom identity system, extensive collateral, motion/brand film, and implementation support.",
+    "objectives": [
+      "Deep brand strategy and positioning for market differentiation",
+      "Custom signature identity system (logo, motion, sonic, experiential)",
+      "Extensive collateral and environmental brand applications",
+      "Brand film/motion system for digital presence",
+      "Implementation rollout and team enablement"
+    ]
+  },
+  "offering": {
+    "code": "C3",
+    "category": "BRAND",
+    "name": "Signature Brand"
+  },
+  "scope": {
+    "included": [
+      "Deep brand strategy programme (research, workshops, positioning, architecture)",
+      "Signature identity system: custom logo, motion logo, sonic branding, brand behaviours",
+      "Extended visual language: custom typography, illustration system, iconography, photography art direction",
+      "Comprehensive brand guidelines (digital + print specifications)",
+      "Extensive collateral: stationery, environmental, packaging, digital, social, advertising templates",
+      "Brand film / motion system production",
+      "Implementation support: team workshops, vendor briefings, rollout planning",
+      "Digital asset library with component system"
+    ],
+    "deliverables": [
+      "Complete signature identity system files",
+      "Full brand guidelines (multi-volume)",
+      "Collateral and template suite",
+      "Brand film and motion assets",
+      "Implementation playbook and asset library"
+    ],
+    "exclusions": [
+      "Website build",
+      "Print/environmental production and installation",
+      "Ongoing brand maintenance (Brand Care is separate and optional)",
+      "Custom photography/illustration production beyond art direction",
+      "Legal trademark registration"
+    ]
+  },
+  "timeline": {
+    "estimated_delivery": "12–20 weeks from approval",
+    "notes": "Bespoke scope; final schedule confirmed at agreement after discovery"
+  },
+  "commercial_schedule": {
+    "currency": "GBP",
+    "reference_price": { "from": 8500 },
+    "approved_final_project_price": null,
+    "setup_fee": null,
+    "payment_schedule": [40, 30, 20, 10],
+    "recurring_fees": null,
+    "care": null,
+    "warranty": {
+      "code": "W90",
+      "label": "90-day Brand Warranty",
+      "applies": true
+    },
+    "vat": {
+      "status": "UNDETERMINED",
+      "note": "VAT status is unresolved; no tax determination is made in this proposal."
+    }
+  },
+  "client_responsibilities": [
+    "Timely feedback on strategy, concepts, design, and guidelines review stages",
+    "Stakeholder availability for deep strategy workshops",
+    "Approval of collateral content and production specs before finalisation",
+    "Access to vendors/partners for implementation coordination"
+  ],
+  "assumptions": [
+    "Approved Final Project Price is the contractual commercial basis, not the public From price",
+    "No third-party production costs are included without prior approval",
+    "Bespoke scope requires a signed scope document before development starts",
+    "Asset library is delivered via shared cloud folder; client manages access"
+  ],
+  "next_steps": [
+    "Review and confirm this proposal",
+    "Following acceptance, a commercial agreement and scope document are executed before invoicing"
+  ],
+  "acceptance": {
+    "method": "written",
+    "provider": null,
+    "status": "PENDING",
+    "accepted_by": null,
+    "accepted_at": null
+  }
+}

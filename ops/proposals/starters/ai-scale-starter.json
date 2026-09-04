@@ -1,0 +1,120 @@
+{
+  "proposal_id": "PRP-YYYY-XXXX",
+  "version": "1.0",
+  "status": "DRAFT",
+  "issue_date": "YYYY-MM-DD",
+  "valid_until": "YYYY-MM-DD",
+  "client": {
+    "name": "",
+    "company": "",
+    "contact": {
+      "name": "",
+      "email": "",
+      "phone": ""
+    }
+  },
+  "project": {
+    "title": "[Company] — AI Scale Implementation",
+    "summary": "Bespoke AI Scale deployment with custom voice agents, advanced CRM automation, multi-location support, custom integrations, and dedicated implementation.",
+    "objectives": [
+      "Custom AI voice agents for complex call flows",
+      "Advanced AI CRM with custom pipeline, fields, and automation logic",
+      "Multi-location / multi-practitioner support",
+      "Custom integrations (PMS, EMR, marketing tools, analytics)",
+      "Advanced lead reactivation and patient journey automation",
+      "Dedicated implementation and ongoing optimisation"
+    ]
+  },
+  "offering": {
+    "code": "A3",
+    "category": "AI",
+    "name": "AI Scale"
+  },
+  "scope": {
+    "included": [
+      "Custom AI voice agent design and deployment (multi-scenario flows)",
+      "AI chat across all channels (web, WhatsApp, Instagram, SMS)",
+      "Advanced AI CRM: custom pipeline, fields, automation, reporting",
+      "Multi-location and multi-practitioner configuration",
+      "Custom integrations: PMS/EMR, marketing platforms, analytics",
+      "Advanced lead reactivation: segmented, multi-channel, AI-personalised",
+      "Patient journey automation: end-to-end workflows",
+      "Knowledge base build with AI training and optimisation",
+      "Dedicated implementation manager and go-live support",
+      "Post-launch optimisation period (4 weeks)"
+    ],
+    "deliverables": [
+      "Custom AI voice and chat agents (live)",
+      "Configured advanced AI CRM instance",
+      "Custom integration suite",
+      "Active advanced automation workflows",
+      "Knowledge base with AI training data",
+      "Optimisation report and handover"
+    ],
+    "exclusions": [
+      "Phone number provisioning (client provides or ports)",
+      "Ongoing message/call minutes beyond included allowance",
+      "Third-party software licences (PMS, EMR, marketing tools)",
+      "Content creation for knowledge base (client provides source material)",
+      "Custom development beyond agreed scope document",
+      "Legal/compliance review of AI communications"
+    ]
+  },
+  "timeline": {
+    "estimated_delivery": "6–10 weeks from approval",
+    "notes": "Bespoke scope; final schedule confirmed at agreement after discovery"
+  },
+  "commercial_schedule": {
+    "currency": "GBP",
+    "reference_price": {
+      "implementation_fee": { "from": 1995 },
+      "monthly_fee": { "from": 1495 }
+    },
+    "approved_final_project_price": {
+      "implementation_fee": null,
+      "monthly_fee": null
+    },
+    "setup_fee": null,
+    "payment_schedule": [50, 50],
+    "recurring_fees": {
+      "monthly": { "from": 1495 },
+      "starts": "GO_LIVE"
+    },
+    "care": null,
+    "warranty": {
+      "code": "W90",
+      "label": "90-day AI Warranty",
+      "applies": true
+    },
+    "vat": {
+      "status": "UNDETERMINED",
+      "note": "VAT status is unresolved; no tax determination is made in this proposal."
+    }
+  },
+  "client_responsibilities": [
+    "Provide phone number(s) for forwarding or porting",
+    "Supply treatment/pricing/FAQ content for knowledge base",
+    "Calendar/PMS/EMR access for integration setup",
+    "Detailed CRM, automation, and integration requirements before build",
+    "Stakeholder availability for discovery workshops",
+    "Approval of custom workflows, message templates, and integrations before activation",
+    "Timely feedback during testing and optimisation phases"
+  ],
+  "assumptions": [
+    "Implementation fee is one-off; monthly fee starts at Go-Live",
+    "AI message/call minutes subject to fair usage within included allowance",
+    "No third-party costs beyond included allowance without prior approval",
+    "Bespoke scope requires a signed scope document before development starts"
+  ],
+  "next_steps": [
+    "Review and confirm this proposal",
+    "Following acceptance, a commercial agreement and scope document are executed before invoicing"
+  ],
+  "acceptance": {
+    "method": "written",
+    "provider": null,
+    "status": "PENDING",
+    "accepted_by": null,
+    "accepted_at": null
+  }
+}

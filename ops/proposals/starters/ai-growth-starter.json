@@ -1,0 +1,115 @@
+{
+  "proposal_id": "PRP-YYYY-XXXX",
+  "version": "1.0",
+  "status": "DRAFT",
+  "issue_date": "YYYY-MM-DD",
+  "valid_until": "YYYY-MM-DD",
+  "client": {
+    "name": "",
+    "company": "",
+    "contact": {
+      "name": "",
+      "email": "",
+      "phone": ""
+    }
+  },
+  "project": {
+    "title": "[Company] — AI Growth Implementation",
+    "summary": "AI Growth deployment including AI Receptionist, AI CRM with pipeline automation, lead reactivation workflows, and multi-channel patient communication.",
+    "objectives": [
+      "24/7 AI voice receptionist for inbound calls",
+      "AI chat widget (website, WhatsApp, Instagram DM)",
+      "AI CRM with pipeline stages, contact management, follow-up automation",
+      "Lead reactivation campaigns via SMS/email/WhatsApp",
+      "Automated calendar booking with confirmations",
+      "Patient nurture sequences and appointment reminders"
+    ]
+  },
+  "offering": {
+    "code": "A2",
+    "category": "AI",
+    "name": "AI Growth"
+  },
+  "scope": {
+    "included": [
+      "AI Receptionist voice agent configuration and deployment",
+      "AI chat widget integration (website, WhatsApp, Instagram DM)",
+      "AI CRM setup: pipeline stages, contact fields, automation rules",
+      "Lead reactivation workflows: multi-channel sequences (SMS, email, WhatsApp)",
+      "Calendar integration with real-time booking and confirmations",
+      "Patient nurture sequences and appointment reminder automations",
+      "Knowledge base build: treatments, pricing, FAQs, policies",
+      "Call forwarding, escalation rules, and testing"
+    ],
+    "deliverables": [
+      "Live AI Receptionist (voice + chat)",
+      "Configured AI CRM instance with pipeline",
+      "Active lead reactivation and nurture workflows",
+      "Automated booking and confirmation flows",
+      "Knowledge base documentation",
+      "Go-live testing report"
+    ],
+    "exclusions": [
+      "Phone number provisioning (client provides or ports)",
+      "Ongoing message/call minutes beyond included allowance",
+      "Custom integrations beyond standard CRM and calendar",
+      "Content creation for knowledge base (client provides source material)",
+      "Custom automation workflows beyond included templates"
+    ]
+  },
+  "timeline": {
+    "estimated_delivery": "4 weeks from approval",
+    "notes": "Estimated; final schedule confirmed at agreement"
+  },
+  "commercial_schedule": {
+    "currency": "GBP",
+    "reference_price": {
+      "implementation_fee": 997,
+      "monthly_fee": 697
+    },
+    "approved_final_project_price": {
+      "implementation_fee": 997,
+      "monthly_fee": 697
+    },
+    "setup_fee": 997,
+    "payment_schedule": [100],
+    "recurring_fees": {
+      "monthly": 697,
+      "starts": "GO_LIVE"
+    },
+    "care": null,
+    "warranty": {
+      "code": "W90",
+      "label": "90-day AI Warranty",
+      "applies": true
+    },
+    "vat": {
+      "status": "UNDETERMINED",
+      "note": "VAT status is unresolved; no tax determination is made in this proposal."
+    }
+  },
+  "client_responsibilities": [
+    "Provide phone number for forwarding or porting",
+    "Supply treatment/pricing/FAQ content for knowledge base",
+    "Calendar access for integration setup",
+    "CRM field and pipeline requirements before build",
+    "Approval of reactivation/nurture message templates before activation",
+    "Timely feedback during testing phase"
+  ],
+  "assumptions": [
+    "Implementation fee is one-off; monthly fee starts at Go-Live",
+    "AI message/call minutes subject to fair usage within included allowance",
+    "No third-party costs (Twilio, OpenAI, etc.) beyond included allowance without prior approval"
+  ],
+  "next_steps": [
+    "Review and confirm this proposal",
+    "Following acceptance, a commercial agreement is executed before invoicing"
+  ],
+  "acceptance": {
+    "method": "written",
+    "provider": null,
+    "status": "PENDING",
+    "accepted_by": null,
+    "accepted_at": null
+  }
+}

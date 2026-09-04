@@ -1,0 +1,109 @@
+{
+  "proposal_id": "PRP-YYYY-XXXX",
+  "version": "1.0",
+  "status": "DRAFT",
+  "issue_date": "YYYY-MM-DD",
+  "valid_until": "YYYY-MM-DD",
+  "client": {
+    "name": "",
+    "company": "",
+    "contact": {
+      "name": "",
+      "email": "",
+      "phone": ""
+    }
+  },
+  "project": {
+    "title": "[Company] — AI Reception Implementation",
+    "summary": "AI Receptionist deployment for 24/7 patient enquiry handling, voice and chat, with calendar booking and SMS/email confirmations.",
+    "objectives": [
+      "24/7 AI voice receptionist for inbound calls",
+      "AI chat widget for website enquiries (WhatsApp, Instagram, web chat)",
+      "Automated calendar booking with real-time availability",
+      "SMS and email confirmations for all bookings",
+      "Knowledge base setup for accurate treatment/pricing responses"
+    ]
+  },
+  "offering": {
+    "code": "A1",
+    "category": "AI",
+    "name": "AI Reception"
+  },
+  "scope": {
+    "included": [
+      "AI Receptionist voice agent configuration and deployment",
+      "AI chat widget integration (website, WhatsApp, Instagram DM)",
+      "Calendar integration (Google/Outlook/Calendly) with real-time booking",
+      "SMS/email confirmation automation for bookings and enquiries",
+      "Knowledge base build: treatments, pricing, FAQs, policies",
+      "Call forwarding and escalation rules setup",
+      "Testing and go-live support"
+    ],
+    "deliverables": [
+      "Live AI Receptionist (voice + chat)",
+      "Configured calendar booking flow",
+      "Automated confirmation sequences",
+      "Knowledge base documentation",
+      "Go-live testing report"
+    ],
+    "exclusions": [
+      "Phone number provisioning (client provides or ports)",
+      "Ongoing message/call minutes beyond included allowance",
+      "Custom integrations beyond calendar and standard channels",
+      "Content creation for knowledge base (client provides source material)"
+    ]
+  },
+  "timeline": {
+    "estimated_delivery": "3 weeks from approval",
+    "notes": "Estimated; final schedule confirmed at agreement"
+  },
+  "commercial_schedule": {
+    "currency": "GBP",
+    "reference_price": {
+      "implementation_fee": 497,
+      "monthly_fee": 297
+    },
+    "approved_final_project_price": {
+      "implementation_fee": 497,
+      "monthly_fee": 297
+    },
+    "setup_fee": 497,
+    "payment_schedule": [100],
+    "recurring_fees": {
+      "monthly": 297,
+      "starts": "GO_LIVE"
+    },
+    "care": null,
+    "warranty": {
+      "code": "W90",
+      "label": "90-day AI Warranty",
+      "applies": true
+    },
+    "vat": {
+      "status": "UNDETERMINED",
+      "note": "VAT status is unresolved; no tax determination is made in this proposal."
+    }
+  },
+  "client_responsibilities": [
+    "Provide phone number for forwarding or porting",
+    "Supply treatment/pricing/FAQ content for knowledge base",
+    "Calendar access for integration setup",
+    "Timely feedback during testing phase"
+  ],
+  "assumptions": [
+    "Implementation fee is one-off; monthly fee starts at Go-Live",
+    "AI message/call minutes subject to fair usage within included allowance",
+    "No third-party costs (Twilio, OpenAI, etc.) beyond included allowance without prior approval"
+  ],
+  "next_steps": [
+    "Review and confirm this proposal",
+    "Following acceptance, a commercial agreement is executed before invoicing"
+  ],
+  "acceptance": {
+    "method": "written",
+    "provider": null,
+    "status": "PENDING",
+    "accepted_by": null,
+    "accepted_at": null
+  }
+}

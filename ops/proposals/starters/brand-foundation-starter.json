@@ -1,0 +1,90 @@
+{
+  "proposal_id": "PRP-YYYY-XXXX",
+  "version": "1.0",
+  "status": "DRAFT",
+  "issue_date": "YYYY-MM-DD",
+  "valid_until": "YYYY-MM-DD",
+  "client": {
+    "name": "",
+    "company": "",
+    "contact": {
+      "name": "",
+      "email": "",
+      "phone": ""
+    }
+  },
+  "project": {
+    "title": "[Company] — Brand Foundation Build",
+    "summary": "Core brand identity package, including logo, color palette, typography, and basic visual style guide.",
+    "objectives": [
+      "Professional, cohesive brand identity",
+      "Establish visual foundations (logo, typography, palette)",
+      "Create basic brand style guide for consistent usage"
+    ]
+  },
+  "offering": {
+    "code": "C1",
+    "category": "BRAND",
+    "name": "Brand Foundation"
+  },
+  "scope": {
+    "included": [
+      "Brand strategy workshop (core values/positioning)",
+      "Primary logo design + variations",
+      "Brand color palette development",
+      "Typography system selection",
+      "Brand style guide (visual foundations)"
+    ],
+    "deliverables": [
+      "Logo files (various formats)",
+      "Visual style guide document",
+      "Typography and palette assets"
+    ],
+    "exclusions": [
+      "Extensive collateral design",
+      "Website build",
+      "Ongoing brand maintenance"
+    ]
+  },
+  "timeline": {
+    "estimated_delivery": "4 weeks from approval",
+    "notes": "Estimated; final schedule confirmed at agreement"
+  },
+  "commercial_schedule": {
+    "currency": "GBP",
+    "reference_price": 2250,
+    "approved_final_project_price": 2250,
+    "setup_fee": null,
+    "payment_schedule": [50, 50],
+    "recurring_fees": null,
+    "care": null,
+    "warranty": {
+      "code": "W90",
+      "label": "90-day Brand Warranty",
+      "applies": true
+    },
+    "vat": {
+      "status": "UNDETERMINED",
+      "note": "VAT status is unresolved; no tax determination is made in this proposal."
+    }
+  },
+  "client_responsibilities": [
+    "Timely feedback on concepts and design review stages",
+    "Brand strategy inputs before design phase"
+  ],
+  "assumptions": [
+    "Approved Final Project Price is the contractual commercial basis",
+    "No third-party costs (fonts, stock images) are included without prior approval"
+  ],
+  "next_steps": [
+    "Review and confirm this proposal",
+    "Following acceptance, a commercial agreement is executed before invoicing"
+  ],
+  "acceptance": {
+    "method": "written",
+    "provider": null,
+    "status": "PENDING",
+    "accepted_by": null,
+    "accepted_at": null
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "proposal_id": "PRP-YYYY-XXXX",
+  "version": "1.0",
+  "status": "DRAFT",
+  "issue_date": "YYYY-MM-DD",
+  "valid_until": "YYYY-MM-DD",
+  "client": {
+    "name": "",
+    "company": "",
+    "contact": {
+      "name": "",
+      "email": "",
+      "phone": ""
+    }
+  },
+  "project": {
+    "title": "[Company] — Grow Website Build",
+    "summary": "Clinic website on the Grow package, adding AI CRM and automations for lead management, patient communication, and growth workflows.",
+    "objectives": [
+      "Professional, conversion-focused clinic website",
+      "AI CRM with pipeline, contacts, and follow-up automation",
+      "AI Automations for lead capture, nurture, and reactivation",
+      "Online booking and patient communication workflows",
+      "Mobile-responsive design"
+    ]
+  },
+  "offering": {
+    "code": "B2",
+    "category": "WEB",
+    "name": "Grow"
+  },
+  "scope": {
+    "included": [
+      "Website design and build (Grow package scope)",
+      "Service pages and content structure",
+      "AI CRM setup: pipeline stages, contact fields, automation rules",
+      "AI Automations: lead capture forms, SMS/email nurture sequences, appointment reminders, lead reactivation workflows",
+      "Booking integration with CRM sync",
+      "Mobile-responsive layout",
+      "Go-live deployment"
+    ],
+    "deliverables": [
+      "Responsive website (desktop and mobile)",
+      "Configured AI CRM instance",
+      "Active automation workflows",
+      "Go-live deployment"
+    ],
+    "exclusions": [
+      "Content copywriting beyond the agreed page set",
+      "Ongoing changes after go-live (Web Care is separate and optional)",
+      "Custom functionality beyond Grow package scope",
+      "AI message credits beyond included allowance"
+    ]
+  },
+  "timeline": {
+    "estimated_delivery": "8 weeks from approval",
+    "notes": "Estimated; final schedule confirmed at agreement"
+  },
+  "commercial_schedule": {
+    "currency": "GBP",
+    "reference_price": 4250,
+    "approved_final_project_price": 4250,
+    "setup_fee": null,
+    "payment_schedule": [40, 30, 30],
+    "recurring_fees": null,
+    "care": null,
+    "warranty": {
+      "code": "W90",
+      "label": "90-day Web Launch Warranty",
+      "applies": true
+    },
+    "vat": {
+      "status": "UNDETERMINED",
+      "note": "VAT status is unresolved; no tax determination is made in this proposal."
+    }
+  },
+  "client_responsibilities": [
+    "Timely feedback on content, design, and CRM/automation review stages",
+    "Required copy, imagery, and CRM field requirements before build stage",
+    "Approval of automation workflows and message templates before activation"
+  ],
+  "assumptions": [
+    "Approved Final Project Price is the contractual commercial basis, not the public From price",
+    "No third-party costs are included without prior approval",
+    "AI message credits are subject to fair usage within included allowance"
+  ],
+  "next_steps": [
+    "Review and confirm this proposal",
+    "Following acceptance, a commercial agreement is executed before invoicing"
+  ],
+  "acceptance": {
+    "method": "written",
+    "provider": null,
+    "status": "PENDING",
+    "accepted_by": null,
+    "accepted_at": null
+  }
+}
