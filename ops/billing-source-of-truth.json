@@ -15,8 +15,8 @@
   "web": {
     "note": "B3 is bespoke. There is no standard B3 percentage schedule; the schedule is defined per-proposal. Final handover remains subject to the required project balance being paid.",
     "packages": {
-      "B1": { "name": "Launch", "price": { "from": 2250 }, "schedule": [50, 50] },
-      "B2": { "name": "Grow", "price": { "from": 4250 }, "schedule": [40, 30, 30] },
+      "B1": { "name": "Launch", "price": 2250, "schedule": [50, 50] },
+      "B2": { "name": "Grow", "price": 4250, "schedule": [40, 30, 30] },
       "B3": { "name": "Scale", "price": { "from": 8500, "bespoke": true }, "schedule": "BESPOKE_MILESTONE_SCHEDULE" }
     },
     "final_handover": "AFTER_PROJECT_BALANCE_PAID"
@@ -24,7 +24,7 @@
   "brand": {
     "packages": {
       "C1": { "name": "Brand Foundation", "price": 2250, "schedule": [50, 50] },
-      "C2": { "name": "Brand System", "price": { "from": 5250 }, "schedule": [40, 30, 30] },
+      "C2": { "name": "Brand System", "price": 5250, "schedule": [40, 30, 30] },
       "C3": { "name": "Signature Brand", "price": { "from": 8500, "bespoke": true }, "schedule": [40, 30, 20, 10] }
     }
   },
