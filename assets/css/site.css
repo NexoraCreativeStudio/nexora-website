@@ -151,8 +151,9 @@
     opacity:0;transform:translateY(8px);animation:riseIn .5s ease forwards;animation-delay:2.9s;
     margin-top:14px;padding:14px;border-radius:12px;
     background:rgba(201,162,39,0.08);border:1px solid rgba(201,162,39,0.35);
-    display:flex;align-items:center;gap:10px;
+    display:flex;align-items:center;gap:10px;transition:border-color .25s ease,transform .25s ease;
   }
+  .booked-card:hover{border-color:rgba(201,162,39,0.5);transform:translateY(6px);}
   .booked-card .check{
     width:26px;height:26px;border-radius:50%;background:var(--gold);
     display:flex;align-items:center;justify-content:center;color:#0B0B0C;font-size:14px;flex-shrink:0;
@@ -275,7 +276,8 @@
 
   /* ===== HOW IT WORKS ===== */
   .how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:20px;overflow:hidden;}
-  .how-step{background:var(--bg);padding:44px 34px;}
+  .how-step{background:var(--bg);padding:44px 34px;transition:border-color .25s ease,transform .25s ease;}
+  .how-step:hover{border-color:rgba(201,162,39,0.4);transform:translateY(-4px);}
   .how-num{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--gold);margin-bottom:26px;}
   .how-step h3{font-size:20px;margin-bottom:12px;font-weight:500;}
   .how-step p{color:var(--text-muted);font-size:14.5px;line-height:1.6;}
@@ -302,8 +304,9 @@
     margin-top:24px;
     background:linear-gradient(120deg,rgba(201,162,39,0.1),rgba(201,162,39,0.02));
     border:1px solid rgba(201,162,39,0.35);border-radius:18px;
-    padding:34px 36px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;
+    padding:34px 36px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;transition:border-color .25s ease,transform .25s ease;
   }
+  .live-demo-card:hover{border-color:rgba(201,162,39,0.5);transform:translateY(-2px);}
   .live-demo-text{display:flex;align-items:center;gap:16px;}
   .live-demo-pulse{
     width:11px;height:11px;border-radius:50%;background:#4ADE80;flex-shrink:0;
@@ -512,8 +515,9 @@
   /* ===== CASE STUDY ===== */
   .case-card{
     background:var(--bg-card);border:1px solid var(--line);border-radius:20px;overflow:hidden;
-    display:grid;grid-template-columns:1.2fr 1fr;
+    display:grid;grid-template-columns:1.2fr 1fr;transition:border-color .25s ease,transform .25s ease;
   }
+  .case-card:hover{border-color:rgba(201,162,39,0.4);transform:translateY(-4px);}
   .case-quote-side{padding:44px;border-right:1px solid var(--line);}
   .case-tag{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gold-light);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:20px;}
   .case-quote{font-family:'Fraunces',serif;font-style:italic;font-size:19px;line-height:1.55;color:var(--text);margin-bottom:18px;}
@@ -593,8 +597,9 @@
   .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:stretch;}
   .price-card{
     background:var(--bg-card);border:1px solid var(--line);border-radius:20px;padding:38px 32px;
-    display:flex;flex-direction:column;
+    display:flex;flex-direction:column;transition:border-color .25s ease,transform .25s ease;
   }
+  .price-card:hover{border-color:rgba(201,162,39,0.4);transform:translateY(-4px);}
   .price-card.featured{
     border-color:rgba(201,162,39,0.55);background:linear-gradient(180deg,rgba(201,162,39,0.065),var(--bg-card) 40%);
     position:relative;
@@ -648,7 +653,8 @@
     display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
     background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden;
   }
-  .contact-info-item{background:var(--bg);padding:24px 20px;text-align:center;}
+  .contact-info-item{background:var(--bg);padding:24px 20px;text-align:center;border:1px solid var(--line);border-radius:12px;transition:border-color .25s ease,transform .25s ease;}
+  .contact-info-item:hover{border-color:rgba(201,162,39,0.4);transform:translateY(-4px);}
   .contact-info-label{font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:8px;}
   .contact-info-value{font-size:14.5px;font-weight:500;color:var(--text);}
   .contact-info-value a{color:var(--gold-light);}
@@ -803,6 +809,7 @@ body.menu-open{overflow:hidden;}
   background:var(--bg-card);border:1px solid var(--line);border-radius:18px;
   padding:34px 30px;transition:border-color .25s ease,transform .25s ease;
 }
+.platform-card:hover{border-color:rgba(201,162,39,0.4);transform:translateY(-4px);}
 .platform-card.active{
   border-color:rgba(201,162,39,0.5);
   background:linear-gradient(160deg,rgba(201,162,39,0.08),var(--bg-card) 60%);
@@ -835,8 +842,9 @@ body.menu-open{overflow:hidden;}
 @media(max-width:860px){.channel-grid{grid-template-columns:1fr;}}
 .channel-card{
   background:var(--bg-card);border:1px solid var(--line);border-radius:18px;
-  padding:30px 26px;
+  padding:30px 26px;transition:border-color .25s ease,transform .25s ease;
 }
+.channel-card:hover{border-color:rgba(201,162,39,0.4);transform:translateY(-4px);}
 .channel-card h3{font-size:18px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
 .channel-status{
   display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
@@ -904,7 +912,8 @@ body.menu-open{overflow:hidden;}
   border:1px solid var(--line);border-radius:16px;overflow:hidden;
 }
 @media(max-width:860px){.process-steps{grid-template-columns:1fr;}}
-.process-steps .step{background:var(--bg);padding:26px 22px;}
+.process-steps .step{background:var(--bg);padding:26px 22px;transition:border-color .25s ease,transform .25s ease;}
+.process-steps .step:hover{border-color:rgba(201,162,39,0.4);transform:translateY(-4px);}
 .process-steps .step .num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--gold);margin-bottom:10px;}
 .process-steps .step h4{font-size:15px;margin-bottom:8px;}
 .process-steps .step p{font-size:13px;color:var(--text-muted);line-height:1.55;}
@@ -918,8 +927,9 @@ body.menu-open{overflow:hidden;}
 
 .quote-pricing-band{
   background:var(--bg-card);border:1px solid var(--line);border-radius:18px;
-  padding:36px;text-align:center;max-width:640px;margin:0 auto;
+  padding:36px;text-align:center;max-width:640px;margin:0 auto;transition:border-color .25s ease,transform .25s ease;
 }
+.quote-pricing-band:hover{border-color:rgba(201,162,39,0.4);transform:translateY(-4px);}
 .quote-pricing-band h3{font-size:19px;margin-bottom:10px;}
 .quote-pricing-band p{font-size:14px;color:var(--text-muted);line-height:1.6;margin-bottom:22px;}
 
