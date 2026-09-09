@@ -50,7 +50,6 @@
   .topbar-inner a{color:var(--text-muted);}
   .topbar-inner a:hover{color:var(--gold-light);}
   .topbar-sep{color:var(--line);}
-  .topbar-stars{color:var(--gold);letter-spacing:1px;}
 
   header{
     position:fixed;top:0;left:0;right:0;z-index:100;
