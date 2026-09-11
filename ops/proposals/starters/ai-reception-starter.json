@@ -14,14 +14,14 @@
     }
   },
   "project": {
-    "title": "[Company] — AI Reception Implementation",
-    "summary": "AI Receptionist deployment for 24/7 patient enquiry handling, voice and chat, with calendar booking and SMS/email confirmations.",
+    "title": "[Company] — AI Reception V1 Implementation",
+    "summary": "AI voice receptionist with knowledge base, call recording, and human escalation. Clinic answers every inbound call 24/7 with accurate responses trained on clinic data.",
     "objectives": [
-      "24/7 AI voice receptionist for inbound calls",
-      "AI chat widget for website enquiries (WhatsApp, Instagram, web chat)",
-      "Automated calendar booking with real-time availability",
-      "SMS and email confirmations for all bookings",
-      "Knowledge base setup for accurate treatment/pricing responses"
+      "24/7 AI voice receptionist for inbound calls to clinic number",
+      "Clinic knowledge base setup (treatments, pricing, policies, FAQs)",
+      "Call recording and lead capture for all inbound enquiries",
+      "Escalation to clinic team with full context when AI cannot resolve",
+      "Calendly booking link integration for demo scheduling"
     ]
   },
   "offering": {
@@ -31,31 +31,41 @@
   },
   "scope": {
     "included": [
-      "AI Receptionist voice agent configuration and deployment",
-      "AI chat widget integration (website, WhatsApp, Instagram DM)",
-      "Calendar integration (Google/Outlook/Calendly) with real-time booking",
-      "SMS/email confirmation automation for bookings and enquiries",
-      "Knowledge base build: treatments, pricing, FAQs, policies",
-      "Call forwarding and escalation rules setup",
-      "Testing and go-live support"
+      "VAPI AI voice agent configuration and deployment to clinic phone number",
+      "Clinic knowledge base build: treatments, pricing, policies, FAQs, Q&A setup",
+      "Call recording and lead capture (call logs stored, accessible in dashboard)",
+      "Human escalation rules and handoff to clinic team with full context",
+      "Calendly booking link integration (clinic manages own calendar)",
+      "VAPI configuration assistance and go-live support",
+      "Testing and live demo before Go-Live"
     ],
     "deliverables": [
-      "Live AI Receptionist (voice + chat)",
-      "Configured calendar booking flow",
-      "Automated confirmation sequences",
-      "Knowledge base documentation",
-      "Go-live testing report"
+      "Live AI Receptionist configured for clinic phone number",
+      "Trained knowledge base (clinic-approved content)",
+      "Call recording and lead capture system",
+      "Escalation routing configured",
+      "Calendly integration tested",
+      "Go-live readiness report"
     ],
     "exclusions": [
-      "Phone number provisioning (client provides or ports)",
-      "Ongoing message/call minutes beyond included allowance",
-      "Custom integrations beyond calendar and standard channels",
-      "Content creation for knowledge base (client provides source material)"
+      "Phone number provisioning (clinic provides or ports existing number)",
+      "WhatsApp Business API integration (future version)",
+      "Instagram DM AI handling (future version)",
+      "Web chat widget (future version)",
+      "SMS/email confirmations (future version)",
+      "Real clinic calendar sync (Calendly link only)",
+      "Custom third-party integrations beyond Calendly",
+      "Content creation — clinic provides treatment/pricing/FAQ source material"
     ]
   },
   "timeline": {
-    "estimated_delivery": "3 weeks from approval",
-    "notes": "Estimated; final schedule confirmed at agreement"
+    "estimated_delivery": "2–3 weeks from approval",
+    "milestones": [
+      "Week 1: VAPI agent configuration + clinic content gathering",
+      "Week 2: Knowledge base training + escalation rules setup",
+      "Week 3: Testing + go-live (call routing active)"
+    ],
+    "notes": "Timeline assumes clinic provides content on schedule. Delays in client content delivery may extend go-live."
   },
   "commercial_schedule": {
     "currency": "GBP",
@@ -85,15 +95,20 @@
     }
   },
   "client_responsibilities": [
-    "Provide phone number for forwarding or porting",
-    "Supply treatment/pricing/FAQ content for knowledge base",
-    "Calendar access for integration setup",
-    "Timely feedback during testing phase"
+    "Provide clinic phone number (new or existing to be forwarded to VAPI)",
+    "Supply treatment/pricing/FAQ/policy content for knowledge base training",
+    "Manage Calendly calendar and sharing for booking demo links",
+    "Review and approve knowledge base before Go-Live",
+    "Timely testing and feedback during implementation phase"
   ],
   "assumptions": [
-    "Implementation fee is one-off; monthly fee starts at Go-Live",
-    "AI message/call minutes subject to fair usage within included allowance",
-    "No third-party costs (Twilio, OpenAI, etc.) beyond included allowance without prior approval"
+    "Implementation fee (£497) is one-time; monthly billing (£297) starts at Go-Live",
+    "Monthly pricing includes VAPI AI voice service, knowledge base, call recording, escalation, Calendly link",
+    "Clinic provides phone number; Nexora configures VAPI routing",
+    "Knowledge base content (treatments, pricing, FAQs) is clinic-provided; Nexora trains and configures VAPI response logic",
+    "VAPI costs and infrastructure are included in monthly pricing (no overage charges for fair usage within clinic size)",
+    "Month-to-month billing: clinic can cancel anytime after Go-Live with 30-day notice",
+    "Future versions (A2, A3) will add WhatsApp, Instagram DM, web chat, SMS confirmations"
   ],
   "next_steps": [
     "Review and confirm this proposal",

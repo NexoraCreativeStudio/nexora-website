@@ -5,7 +5,30 @@
   "ai": {
     "note": "Implementation fee and recurring monthly fee are separate. Recurring billing starts at Go-Live. AI support is included within the relevant subscription. No AI Care. No separate standard AI support invoice.",
     "plans": {
-      "A1": { "name": "AI Reception", "implementation_fee": 497, "monthly_fee": 297 },
+      "A1": {
+        "name": "AI Reception V1",
+        "version": "1.0",
+        "implementation_fee": 497,
+        "monthly_fee": 297,
+        "billing_cycle": "month-to-month",
+        "cancellation": "cancel anytime",
+        "included": [
+          "VAPI AI voice receptionist (configured for clinic)",
+          "Clinic knowledge base setup (treatments, pricing, FAQs)",
+          "Call recording and lead capture",
+          "Human escalation with context handoff",
+          "Calendly booking link integration"
+        ],
+        "excluded_v1": [
+          "WhatsApp AI message handling (not yet implemented)",
+          "Instagram DM AI handling (not yet implemented)",
+          "Web chat widget (not yet implemented)",
+          "SMS/email confirmations (not yet implemented)",
+          "Real clinic calendar sync (only Calendly link available)",
+          "Custom third-party integrations"
+        ],
+        "note_v1": "V1 focuses on proven voice-first receptionist with knowledge base. Future versions (A2, A3) add multi-channel AI and advanced automations."
+      },
       "A2": { "name": "AI Growth", "implementation_fee": 997, "monthly_fee": 697 },
       "A3": { "name": "AI Scale", "implementation_fee": { "from": 1995 }, "monthly_fee": { "from": 1495 } }
     },
