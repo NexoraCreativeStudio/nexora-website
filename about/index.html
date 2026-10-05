@@ -117,6 +117,7 @@
       </div>
       <a href="/luxury-clinic-websites/">Luxury Clinic Websites</a>
       <a href="/brand-studio/">Brand Studio</a>
+      <a href="/creative/">Creative</a>
       <a href="/#pricing">Pricing</a>
       <a href="/results/">Results</a>
       <a href="/about/">About</a>
@@ -245,5 +246,28 @@
 <script src="/assets/js/calendly-init.js"></script>
 
   <script src="/assets/js/cta-tracking.js"></script>
+
+<script>
+function alignWhatsAppWithDemo() {
+  const demoButton = document.querySelector('.nav-cta');
+  const whatsappButton = document.querySelector('.whatsapp-float');
+
+  if (demoButton && whatsappButton) {
+    const rect = demoButton.getBoundingClientRect();
+    const rightOffset = window.innerWidth - rect.right;
+    whatsappButton.style.right = rightOffset + 'px';
+  }
+}
+
+// Run on page load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', alignWhatsAppWithDemo);
+} else {
+  alignWhatsAppWithDemo();
+}
+
+// Run on window resize
+window.addEventListener('resize', alignWhatsAppWithDemo);
+</script>
 </body>
 </html>
