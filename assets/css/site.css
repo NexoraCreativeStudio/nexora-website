@@ -298,6 +298,18 @@
   .service-card h3{font-size:18px;margin-bottom:10px;font-weight:500;}
   .service-card p{color:var(--text-muted);font-size:14px;line-height:1.6;}
 
+  .service-areas-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:24px;
+  }
+  @media(max-width:1024px){
+    .service-areas-grid{grid-template-columns:repeat(2,1fr);}
+  }
+  @media(max-width:600px){
+    .service-areas-grid{grid-template-columns:1fr;}
+  }
+
   /* ===== LIVE DEMO CARD ===== */
   .live-demo-card{
     margin-top:24px;
