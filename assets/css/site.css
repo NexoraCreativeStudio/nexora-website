@@ -973,3 +973,11 @@ body.menu-open{overflow:hidden;}
 .case-study-stats div{background:var(--bg-card);padding:24px 18px;text-align:center;}
 .case-study-stats .num{font-family:'Fraunces',serif;font-size:26px;color:var(--gold-light);}
 .case-study-stats .label{font-size:12px;color:var(--text-muted);margin-top:4px;}
+section:has(.price-name) .pricing-grid {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+  margin: 16px auto 0;
+}
