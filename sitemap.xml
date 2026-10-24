@@ -16,6 +16,20 @@
   </url>
 
   <url>
+    <loc>https://nexorastudio.uk/pricing/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nexorastudio.uk/pricing/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://nexorastudio.uk/de/pricing/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nexorastudio.uk/pricing/"/>
+  </url>
+
+  <url>
+    <loc>https://nexorastudio.uk/de/pricing/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://nexorastudio.uk/pricing/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://nexorastudio.uk/de/pricing/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://nexorastudio.uk/pricing/"/>
+  </url>
+
+  <url>
     <loc>https://nexorastudio.uk/platform/</loc>
   </url>
 
